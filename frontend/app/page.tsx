@@ -19,7 +19,7 @@ export default function Page() {
         <div className="absolute top-20 right-10 w-[400px] h-[400px] bg-primary/10 blur-[100px] rounded-full -z-10" />
         <div className="absolute bottom-20 left-10 w-[350px] h-[350px] bg-accent/10 blur-[100px] rounded-full -z-10" />
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6 sm:space-y-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center space-y-5 sm:space-y-6">
           <div className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-primary/5 backdrop-blur-md border border-primary/20 shadow-lg shadow-primary/5 text-primary text-[10px] sm:text-xs font-black tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-2 sm:mb-4 animate-in fade-in slide-in-from-top-4 duration-1000">
             <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
@@ -28,18 +28,18 @@ export default function Page() {
             Technologie IA Sécurisée
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.05] sm:leading-[0.95] text-balance">
-            La clarté pour <br />
-            <span className="inline-block mt-1 sm:mt-2 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent [background-size:200%] animate-[gradient_8s_ease_infinite] italic">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-balance">
+            La clarté pour{" "}
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               votre santé.
             </span>
           </h1>
 
-          <p className="text-base sm:text-xl md:text-2xl text-muted-foreground font-medium max-w-2xl mx-auto leading-relaxed text-pretty px-2 sm:px-0">
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground font-medium max-w-xl mx-auto leading-relaxed text-pretty px-2 sm:px-0">
             Téléchargez votre compte-rendu PDF pour une explication claire et instantanée.
           </p>
 
-          <div className="pt-4 sm:pt-8">
+          <div className="pt-4 sm:pt-6">
             <AnalyzerForm />
           </div>
         </div>

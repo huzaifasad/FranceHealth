@@ -20,7 +20,6 @@ import {
   Eye,
   CheckCircle2,
   AlertTriangle,
-  ShieldCheck,
   Trash2,
   Sparkles,
   AlertCircle,
@@ -197,35 +196,7 @@ export function AnalyzerForm() {
             )}
           </div>
 
-          <div className="mt-6 sm:mt-10 pt-6 sm:pt-8 border-t space-y-4 sm:space-y-6">
-            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-muted-foreground justify-center text-center px-2">
-              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-accent shrink-0" />
-              <p className="font-medium">Données chiffrées de bout en bout • Aucun stockage permanent</p>
-            </div>
-
-            <label className="flex items-start gap-3 px-2 sm:px-4 cursor-pointer group">
-              <Checkbox
-                checked={consentGiven}
-                onCheckedChange={(checked) => setConsentGiven(checked === true)}
-                disabled={isAnalyzing}
-                className="mt-0.5 shrink-0"
-              />
-              <span className="text-xs sm:text-sm text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors">
-                J'ai lu la{" "}
-                <a
-                  href="/protection-des-donnees"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-accent underline underline-offset-2 hover:text-accent/80"
-                >
-                  politique de confidentialité
-                </a>{" "}
-                et je consens à ce que le contenu de mon compte-rendu (donnée de santé) soit transmis à notre
-                prestataire d'intelligence artificielle dans le seul but de générer l'explication pédagogique.
-              </span>
-            </label>
-
+          <div className="mt-6 sm:mt-10 pt-6 sm:pt-8 border-t space-y-3">
             <Button
               onClick={handleAnalyze}
               disabled={!file || !consentGiven || isAnalyzing}
@@ -236,6 +207,28 @@ export function AnalyzerForm() {
               <span>{isAnalyzing ? "Analyse en cours..." : "Analyser mes résultats"}</span>
               {!isAnalyzing && <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
             </Button>
+
+            <label className="flex items-center justify-center gap-2 cursor-pointer group">
+              <Checkbox
+                checked={consentGiven}
+                onCheckedChange={(checked) => setConsentGiven(checked === true)}
+                disabled={isAnalyzing}
+                className="shrink-0"
+              />
+              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                J'accepte la{" "}
+                <a
+                  href="/protection-des-donnees"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-accent underline underline-offset-2 hover:text-accent/80"
+                >
+                  politique de confidentialité
+                </a>{" "}
+                et le traitement de mes données de santé par IA
+              </span>
+            </label>
 
             <AnalysisProgress active={isAnalyzing} complete={finishing} />
           </div>

@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 
 const NAV_LINKS = [
   { href: "/prompt", label: "Éditer le prompt" },
-  { href: "#", label: "Protection des données" },
+  { href: "/protection-des-donnees", label: "Protection des données" },
   { href: "#", label: "Notre mission" },
 ]
 

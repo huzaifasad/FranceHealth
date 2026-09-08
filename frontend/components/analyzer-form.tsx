@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   FileText,
   Loader2,
@@ -28,6 +29,7 @@ export function AnalyzerForm() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [result, setResult] = useState<{ analysis: string; fileBase64?: string; fileName?: string } | null>(null)
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false)
+  const [consentGiven, setConsentGiven] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,6 +54,15 @@ export function AnalyzerForm() {
       toast({
         title: "Aucun fichier",
         description: "Veuillez déposer un PDF avant de lancer l'analyse.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!consentGiven) {
+      toast({
+        title: "Consentement requis",
+        description: "Veuillez cocher la case de consentement avant d'analyser vos données de santé.",
         variant: "destructive",
       })
       return
@@ -179,9 +190,32 @@ export function AnalyzerForm() {
               <p className="font-medium">Données chiffrées de bout en bout • Aucun stockage permanent</p>
             </div>
 
+            <label className="flex items-start gap-3 px-2 sm:px-4 cursor-pointer group">
+              <Checkbox
+                checked={consentGiven}
+                onCheckedChange={(checked) => setConsentGiven(checked === true)}
+                disabled={isAnalyzing}
+                className="mt-0.5 shrink-0"
+              />
+              <span className="text-xs sm:text-sm text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors">
+                J'ai lu la{" "}
+                <a
+                  href="/protection-des-donnees"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-accent underline underline-offset-2 hover:text-accent/80"
+                >
+                  politique de confidentialité
+                </a>{" "}
+                et je consens à ce que le contenu de mon compte-rendu (donnée de santé) soit transmis à notre
+                prestataire d'intelligence artificielle dans le seul but de générer l'explication pédagogique.
+              </span>
+            </label>
+
             <Button
               onClick={handleAnalyze}
-              disabled={!file || isAnalyzing}
+              disabled={!file || !consentGiven || isAnalyzing}
               className="w-full rounded-xl px-6 sm:px-12 py-5 sm:py-7 text-base sm:text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3"
             >
               {isAnalyzing && <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin shrink-0" />}

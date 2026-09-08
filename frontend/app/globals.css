@@ -124,4 +124,15 @@
   body {
     @apply bg-background text-foreground selection:bg-primary/20;
   }
+
+  /* Added gradient animation for hero title */
+  @keyframes gradient {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
 }

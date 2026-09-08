@@ -2,9 +2,12 @@
 
 The system prompt is what tells the AI how to write its explanations — tone, what it's allowed to say, the exact output format, etc. It's stored in **SQLite** (`backend/data/app.db`, created automatically on first run), not hardcoded anywhere.
 
-## Access — `/prompt` is password-protected
+## Access — `/prompt` can be password-protected (currently: open)
 
-Editing the prompt controls the AI's actual safety behavior, so `/prompt` (on the frontend) requires a password before it shows anything.
+Editing the prompt controls the AI's actual safety behavior, so `/prompt` (on the frontend) *can* require a password before it shows anything — that's toggled by whether `PROMPT_ADMIN_PASSWORD` is set:
+
+- **Set** → full protection, as described below.
+- **Blank/unset** → the gate is off entirely, `/prompt` is open to anyone, no login. **This is the current state.** Toggle it back any time by setting `PROMPT_ADMIN_PASSWORD` again — nothing else needs to change or be rebuilt.
 
 **How it works, in simple steps:**
 1. Someone opens `/prompt`.
@@ -26,7 +29,7 @@ openssl rand -hex 32
 
 **If you forget the password:** there's no reset flow — just change `PROMPT_ADMIN_PASSWORD` in `.env` and restart the frontend. The old password stops working immediately.
 
-**If `PROMPT_ADMIN_PASSWORD` isn't set at all:** `/prompt` shows a message explaining that, instead of ever letting anyone in. It fails locked, not open.
+**If `PROMPT_ADMIN_PASSWORD` isn't set at all:** the gate is off — `/prompt` is open, no login required (see toggle note above).
 
 **Second layer — the backend itself is also locked, not just the frontend page.** The frontend's password gate only exists in the frontend; without anything on the backend's side, someone who could reach port 3001 directly (e.g. an unfirewalled VPS) could skip the password entirely. So `backend`'s own `/api/prompt` also refuses every request that doesn't carry the exact `INTERNAL_API_SECRET` value as an `x-internal-api-secret` header — a second secret, shared between the two services, that only the frontend's own proxy route knows to send. A logged-in browser never sees or sends this value itself; it's server-to-server only. Set the **same** value on both sides:
 ```

@@ -7,12 +7,17 @@
 // Gated: both reading and writing the prompt require a valid session —
 // reading it too, not just Save, since the prompt text itself reveals
 // exactly how the AI's safety instructions are worded.
+//
+// ...unless PROMPT_ADMIN_PASSWORD isn't set at all, in which case the gate
+// is off entirely (matches app/prompt/page.jsx) — set it again any time to
+// bring the exact same protection back with nothing to rebuild.
 import { cookies } from "next/headers"
-import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth"
+import { verifySessionToken, isAdminPasswordConfigured, SESSION_COOKIE_NAME } from "@/lib/auth"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
 async function isAuthenticated() {
+  if (!isAdminPasswordConfigured()) return true
   const cookieStore = await cookies()
   return verifySessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value)
 }

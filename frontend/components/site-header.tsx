@@ -4,6 +4,7 @@ import { useState } from "react"
 import { HeartPulse, Menu, UserCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle, SheetClose } from "@/components/ui/sheet"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const NAV_LINKS = [
   { href: "/prompt", label: "Éditer le prompt" },
@@ -54,47 +55,51 @@ export function SiteHeader() {
             ))}
           </div>
           <div className="h-4 w-px bg-border/60 mx-2" />
+          <ThemeToggle />
           <Button variant="ghost" size="sm" className="rounded-full gap-2 font-semibold">
             <UserCircle className="w-4 h-4" />
             Mon Espace
           </Button>
         </div>
 
-        <Sheet open={open} onOpenChange={setOpen}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden rounded-full"
-            aria-label="Ouvrir le menu"
-            onClick={() => setOpen(true)}
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
-          <SheetContent side="right" className="w-[85vw] sm:w-80 flex flex-col">
-            <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
-            <div className="px-4 pt-6">
-              <Logo large />
-            </div>
-            <div className="flex flex-col gap-1 px-4 mt-8">
-              {NAV_LINKS.map((link) => (
-                <SheetClose asChild key={link.label}>
-                  <a
-                    href={link.href}
-                    className="rounded-xl px-4 py-3.5 text-base font-semibold text-foreground hover:bg-muted transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </SheetClose>
-              ))}
-            </div>
-            <div className="mt-auto px-4 pb-6">
-              <Button variant="outline" className="w-full rounded-full gap-2 font-semibold justify-center h-12">
-                <UserCircle className="w-4 h-4" />
-                Mon Espace
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
+        <div className="flex items-center gap-1 lg:hidden">
+          <ThemeToggle />
+          <Sheet open={open} onOpenChange={setOpen}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              aria-label="Ouvrir le menu"
+              onClick={() => setOpen(true)}
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            <SheetContent side="right" className="w-[85vw] sm:w-80 flex flex-col">
+              <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
+              <div className="px-4 pt-6">
+                <Logo large />
+              </div>
+              <div className="flex flex-col gap-1 px-4 mt-8">
+                {NAV_LINKS.map((link) => (
+                  <SheetClose asChild key={link.label}>
+                    <a
+                      href={link.href}
+                      className="rounded-xl px-4 py-3.5 text-base font-semibold text-foreground hover:bg-muted transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  </SheetClose>
+                ))}
+              </div>
+              <div className="mt-auto px-4 pb-6">
+                <Button variant="outline" className="w-full rounded-full gap-2 font-semibold justify-center h-12">
+                  <UserCircle className="w-4 h-4" />
+                  Mon Espace
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </nav>
   )

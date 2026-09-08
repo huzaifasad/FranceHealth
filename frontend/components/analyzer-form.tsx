@@ -110,11 +110,11 @@ export function AnalyzerForm() {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 sm:space-y-12 pb-12 sm:pb-20">
-      <Card className="border-none shadow-2xl shadow-primary/10 rounded-[1.75rem] sm:rounded-[2.5rem] overflow-hidden bg-card/60 backdrop-blur-xl border border-border/50">
+      <Card className="border-none shadow-2xl shadow-primary/10 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-card/60 backdrop-blur-xl border border-border/50">
         <CardContent className="p-4 sm:p-8 md:p-12">
           <div
             onClick={() => !isAnalyzing && fileInputRef.current?.click()}
-            className={`group relative flex flex-col items-center justify-center border-2 border-dashed rounded-[1.5rem] sm:rounded-[2rem] p-8 sm:p-12 md:p-16 transition-all cursor-pointer
+            className={`group relative flex flex-col items-center justify-center border-2 border-dashed rounded-2xl sm:rounded-3xl p-8 sm:p-12 md:p-16 transition-all cursor-pointer
               ${isAnalyzing ? "opacity-50 cursor-not-allowed" : ""}
               ${file ? "border-accent/50 bg-accent/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"}
             `}
@@ -214,7 +214,7 @@ export function AnalyzerForm() {
           </div>
 
           <div className="grid gap-4 sm:gap-8">
-            <Card className="rounded-[1.75rem] sm:rounded-[2.5rem] border-none bg-gradient-to-br from-primary/5 via-accent/5 to-background p-5 sm:p-8 md:p-10 shadow-xl">
+            <Card className="rounded-[2rem] sm:rounded-[2.5rem] border-none bg-gradient-to-br from-primary/5 via-accent/5 to-background p-5 sm:p-8 md:p-10 shadow-xl">
               <div className="prose prose-sm sm:prose-lg max-w-none dark:prose-invert prose-headings:font-black prose-headings:tracking-tight prose-p:leading-relaxed prose-p:text-foreground/90">
                 <div className="flex items-start gap-3 sm:gap-5 mb-5 sm:mb-8 pb-4 sm:pb-6 border-b border-border/50">
                   <div className="bg-primary/10 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shrink-0">

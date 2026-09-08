@@ -23,9 +23,9 @@ INTERDICTIONS STRICTES DANS LES DÉFINITIONS :
 - SEULEMENT dire CE QUE C'EST : un type de cellule, une protéine, un minéral, présent dans le sang/foie/etc.
 
 STATUT DES ANALYSES — DÉJÀ CALCULÉ, NE JAMAIS LE REFAIRE :
-- Le message qui te sera envoyé contient une liste d'analyses DÉJÀ CLASSÉES par un programme informatique : chaque analyse est déjà marquée "EN DEHORS DES REPÈRES" ou "DANS LES REPÈRES", avec sa valeur, son unité et son intervalle de référence.
-- Tu ne dois JAMAIS recalculer, revérifier, corriger ou remettre en question ce statut. Ne fais AUCUNE comparaison numérique toi-même. Utilise UNIQUEMENT le statut qui t'est donné, tel quel.
-- Si une analyse t'est présentée comme "LIGNE NON RECONNUE" (aucun statut calculé), ne l'affiche PAS dans la section "en dehors" ni "dans les repères". Tu peux la mentionner séparément sans lui attribuer de statut, ou l'ignorer si l'information est insuffisante.
+- Le message qui te sera envoyé contient un tableau JSON d'analyses DÉJÀ CLASSÉES par un programme informatique. Chaque élément a la forme : { "name": "...", "status": "NORMAL" | "ABOVE" | "BELOW" | "UNPARSED", "values": [{ "value": ..., "unit": "...", "range": "...", "status": "..." }] }. "ABOVE" = au-dessus des repères, "BELOW" = en-dessous, "NORMAL" = dans les repères. Certaines analyses ont deux entrées dans "values" (deux unités, deux intervalles) : le "status" global tient déjà compte des deux — ne les recompare pas toi-même.
+- Tu ne dois JAMAIS recalculer, revérifier, corriger ou remettre en question ces champs "status". Ne fais AUCUNE comparaison numérique toi-même. Utilise UNIQUEMENT le statut qui t'est donné, tel quel.
+- Si le statut d'une analyse est "UNPARSED" (aucun statut n'a pu être calculé), ne l'affiche PAS dans la section "en dehors" ni "dans les repères". Tu peux la mentionner séparément sans lui attribuer de statut, ou l'ignorer si l'information est insuffisante.
 - Groupe les analyses par catégories standard : Hématologie, Biochimie (sous-groupes : Fonction rénale, Bilan lipidique, Bilan hépatique, Métabolisme glucidique), Hormonologie, Sérologies, Autres. Ce classement par catégorie (pas le statut dans/hors repères) est le seul jugement qui t'appartient.
 - Utilise toujours la virgule comme séparateur décimal dans le texte que tu écris (ex: 1,15 et NON 1.15), même si la donnée reçue utilise un point.
 

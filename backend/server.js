@@ -150,30 +150,18 @@ app.post('/api/extract-pdf-text', upload.single('pdf'), async (req, res) => {
   }
 });
 
-// Builds the message handed to the AI: results the CODE already classified
-// as in/out of range. The AI is told explicitly never to recompute this —
-// its only job left is writing the pedagogical description and formatting
-// the structured report, not deciding the status.
-function buildClassifiedSummaryForAI(results) {
-  const abnormal = results.filter((r) => r.status === 'ABOVE' || r.status === 'BELOW');
-  const normal = results.filter((r) => r.status === 'NORMAL');
-  const unparsed = results.filter((r) => r.status === 'UNPARSED');
-
-  const fmt = (r) =>
-    `- ${r.name} : ${r.value ?? ''}${r.unit ? ' ' + r.unit : ''} (repères: ${r.rangeText}) [statut calculé: ${r.status}]`;
-
-  let out = `RÉSULTATS DÉJÀ CLASSÉS PAR LE CODE (statut déterministe, calculé par un programme — NE JAMAIS le recalculer, le remettre en question, ou le changer) :\n\n`;
-  out += `EN DEHORS DES REPÈRES (${abnormal.length}) :\n`;
-  out += abnormal.length ? abnormal.map(fmt).join('\n') : '(aucune)';
-  out += `\n\nDANS LES REPÈRES (${normal.length}) :\n`;
-  out += normal.length ? normal.map(fmt).join('\n') : '(aucune)';
-
-  if (unparsed.length) {
-    out += `\n\nLIGNES NON RECONNUES — AUCUN statut n'a pu être calculé pour celles-ci. Ne les classe NI dans, NI en dehors des repères ; décris-les séparément sans statut si tu les mentionnes (${unparsed.length}) :\n`;
-    out += unparsed.map((r) => `- ${r.name}`).join('\n');
-  }
-
-  return out;
+// Builds the JSON payload handed to the AI: results the CODE already
+// classified as in/out of range. Sent as actual JSON (not prose) in the
+// user message, per current OpenAI guidance for embedding authoritative
+// data the model should treat as ground truth — the model is told in the
+// system prompt to never recompute or contradict these statuses, only
+// describe them.
+function toAIResults(results) {
+  return results.map((r) => ({
+    name: r.name,
+    status: r.status, // "NORMAL" | "ABOVE" | "BELOW" | "UNPARSED" — already decided by code
+    values: r.entries.map((e) => ({ value: e.value, unit: e.unit, range: e.rangeText, status: e.status })),
+  }));
 }
 
 app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
@@ -201,7 +189,7 @@ app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
     // Deterministic, code-based classification — this replaces asking the
     // AI to parse numbers and judge in/out-of-range itself.
     const parsedResults = parseLabResults(textInput);
-    const classifiedSummary = buildClassifiedSummaryForAI(parsedResults);
+    const aiResultsJson = JSON.stringify(toAIResults(parsedResults), null, 2);
 
     const systemPrompt = getPrompt() || '';
 
@@ -211,7 +199,11 @@ app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
         { role: 'system', content: systemPrompt },
         {
           role: 'user',
-          content: `${classifiedSummary}\n\n---\nTexte brut extrait du compte-rendu (pour contexte uniquement — ne sert PAS à recalculer un statut) :\n${textInput}`,
+          content:
+            `Voici les résultats, déjà classés par un programme (JSON ci-dessous). Le champ "status" de chaque ` +
+            `analyse — et de chaque entrée dans "values" — est DÉFINITIF : ne le recalcule jamais, ne le remets ` +
+            `jamais en question.\n\n${aiResultsJson}\n\n---\nTexte brut extrait du compte-rendu (pour contexte ` +
+            `uniquement — ne sert PAS à recalculer un statut) :\n${textInput}`,
         },
       ],
       temperature: 0.1,
@@ -222,7 +214,7 @@ app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
 
     let fileBase64 = null;
     if (pdfBuffer) {
-      const updatedPdfBuffer = await appendResultsToPdf(pdfBuffer, analysisResult, textInput);
+      const updatedPdfBuffer = await appendResultsToPdf(pdfBuffer, analysisResult, textInput, parsedResults);
       fileBase64 = updatedPdfBuffer.toString('base64');
     }
 
@@ -243,9 +235,64 @@ app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
 });
 
 // ========================
+// PDF COLOR-CODING — reads the code-computed status, not the AI's prose
+// ========================
+function normalizeTestName(s) {
+  return s
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // strip accents
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Builds a normalized-name -> status ("NORMAL" | "ABOVE" | "BELOW") lookup
+// from the classification array lab-parser.js already computed. UNPARSED
+// entries are excluded on purpose — there's no real status to color with.
+function buildStatusLookup(classification) {
+  const map = new Map();
+  for (const r of classification || []) {
+    if (r.status === 'UNPARSED') continue;
+    map.set(normalizeTestName(r.name), r.status);
+  }
+  return map;
+}
+
+function lookupStatus(map, rawName) {
+  const norm = normalizeTestName(rawName);
+  if (map.has(norm)) return map.get(norm);
+  // Unambiguous partial match fallback (AI may phrase the name slightly
+  // differently than the raw extracted line did).
+  let match = null;
+  let hits = 0;
+  for (const [key, status] of map) {
+    if (norm.includes(key) || key.includes(norm)) {
+      match = status;
+      hits++;
+    }
+  }
+  return hits === 1 ? match : null;
+}
+
+// The single decision point for a bullet line's color: prefers the
+// code-computed status looked up by name; only falls back to "whichever
+// section the AI put this line under" (sectionContext) when the name isn't
+// found in our classification at all (e.g. an UNPARSED line). This is what
+// makes the PDF's red/green coloring immune to the AI mis-sorting a result
+// into the wrong section — see pdf-color.test.js for the exact scenario.
+function resolveBulletColor(rawLine, statusLookup, sectionContext) {
+  const bulletName = (rawLine.includes(':') ? rawLine.slice(0, rawLine.indexOf(':')) : rawLine).trim();
+  const computedStatus = lookupStatus(statusLookup, bulletName);
+  const isAbnormal = computedStatus ? computedStatus === 'ABOVE' || computedStatus === 'BELOW' : sectionContext.inAbnormal;
+  const isNormal = computedStatus ? computedStatus === 'NORMAL' : sectionContext.inNormal;
+  return { isAbnormal, isNormal, computedStatus };
+}
+
+// ========================
 // ULTIMATE PROFESSIONAL PDF DESIGN
 // ========================
-async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput) {
+async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, classification) {
+  const statusLookup = buildStatusLookup(classification);
   const pdfDoc = await PDFDocument.load(originalPdfBuffer);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -491,22 +538,37 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput) {
     else if (line.startsWith('•') || line.startsWith('*') || line.startsWith('-')) {
       line = line.replace(/^[•*-]\s*/, '');
       leftPad = 25;
-      
-      if (inAbnormal) {
+
+      // Read color from OUR computed status, not from which section the AI
+      // put this line in — resolveBulletColor() is the single source of
+      // truth for this decision (see its own tests in pdf-color.test.js).
+      const resolved = resolveBulletColor(line, statusLookup, { inAbnormal, inNormal });
+      const isAbnormalBullet = resolved.isAbnormal;
+      const isNormalBullet = resolved.isNormal;
+
+      // Keep the running section context in sync so the detail lines under
+      // this bullet ("Votre résultat :", "Repères :", ...) — which aren't
+      // bullets themselves — inherit the same, correctly-sourced color.
+      if (resolved.computedStatus) {
+        inAbnormal = isAbnormalBullet;
+        inNormal = isNormalBullet;
+      }
+
+      if (isAbnormalBullet) {
         drawBox = true;
         boxColor = C.redBg;
         borderColor = C.redLight;
         textColor = C.red;
         textFont = boldFont;
         iconType = 'alert';
-        
+
         if (line.includes(':') && !line.toLowerCase().includes('qu\'est')) {
           textSize = 11;
         }
-      } else if (inNormal) {
+      } else if (isNormalBullet) {
         textColor = C.green;
         iconType = 'check';
-        
+
         if (line.includes(':')) {
           textFont = boldFont;
           textSize = 10;
@@ -750,6 +812,21 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput) {
 }
 
 // ========================
-app.listen(PORT, () => {
-  console.log(`🚀 FranceHealth API running on port ${PORT}`);
-});
+// Only actually bind to a port when this file is run directly (`node
+// server.js`) — not when it's `require()`d, e.g. from a test script that
+// just wants appendResultsToPdf() in isolation.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 FranceHealth API running on port ${PORT}`);
+  });
+}
+
+module.exports = {
+  app,
+  appendResultsToPdf,
+  extractTextFromPdf,
+  normalizeTestName,
+  buildStatusLookup,
+  lookupStatus,
+  resolveBulletColor,
+};

@@ -15,7 +15,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24" # backend uses node:sqlite, needs Node >= 22.5
 
       - name: Install & build frontend
         working-directory: ./frontend
@@ -23,9 +23,11 @@ jobs:
           npm ci
           npm run build
 
-      - name: Install backend
+      - name: Install & test backend
         working-directory: ./backend
-        run: npm ci
+        run: |
+          npm ci
+          npm test
 
   deploy:
     name: Deploy to VPS

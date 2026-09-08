@@ -28,17 +28,23 @@ openssl rand -hex 32
 
 **If `PROMPT_ADMIN_PASSWORD` isn't set at all:** `/prompt` shows a message explaining that, instead of ever letting anyone in. It fails locked, not open.
 
+**Second layer — the backend itself is also locked, not just the frontend page.** The frontend's password gate only exists in the frontend; without anything on the backend's side, someone who could reach port 3001 directly (e.g. an unfirewalled VPS) could skip the password entirely. So `backend`'s own `/api/prompt` also refuses every request that doesn't carry the exact `INTERNAL_API_SECRET` value as an `x-internal-api-secret` header — a second secret, shared between the two services, that only the frontend's own proxy route knows to send. A logged-in browser never sees or sends this value itself; it's server-to-server only. Set the **same** value on both sides:
+```
+INTERNAL_API_SECRET=some-other-long-random-string
+```
+Generate one with `openssl rand -hex 32`, same as the session secret — just use a **different** value for each.
+
 ## How to update the prompt itself
 
 **Option A — through the UI (recommended):** log into `/prompt`, edit the text, click Save. It's saved straight to SQLite and used on the very next analysis — no restart needed.
 
-**Option B — via the API directly**, once logged in through the browser (needs that session cookie — the easiest way to do this is via your browser's dev tools "copy as curl" on a request made while logged into `/prompt`):
+**Option B — via the API directly**, once logged in through the browser (needs that session cookie — the easiest way to do this is via your browser's dev tools "copy as curl" on a request made while logged into `/prompt`). Note this hits the **backend directly** (port 3001), so it also needs the internal secret header from above:
 ```bash
 curl -X POST http://localhost:3001/api/prompt \
   -H "Content-Type: application/json" \
+  -H "x-internal-api-secret: your-INTERNAL_API_SECRET-value" \
   -d '{"prompt": "your full prompt text here"}'
 ```
-Note: this example hits the **backend directly** (port 3001), which has no password check of its own — the password gate lives on the frontend's `/api/prompt` proxy. Only expose the backend's port outside your own machine/network if you understand that.
 
 ## First run / reset
 

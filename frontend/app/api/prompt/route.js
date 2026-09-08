@@ -23,7 +23,10 @@ export async function GET() {
   }
 
   try {
-    const response = await fetch(`${API_URL}/api/prompt`, { cache: "no-store" })
+    const response = await fetch(`${API_URL}/api/prompt`, {
+      cache: "no-store",
+      headers: { "x-internal-api-secret": process.env.INTERNAL_API_SECRET || "" },
+    })
     const data = await response.json()
     return Response.json(data, { status: response.status })
   } catch (error) {
@@ -43,7 +46,10 @@ export async function POST(request) {
     const body = await request.json()
     const response = await fetch(`${API_URL}/api/prompt`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-api-secret": process.env.INTERNAL_API_SECRET || "",
+      },
       body: JSON.stringify(body),
     })
     const data = await response.json()

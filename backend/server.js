@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const multer = require('multer');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const OpenAI = require('openai').default;
@@ -117,7 +118,30 @@ app.get('/health', (req, res) => {
 // ========================
 // SYSTEM PROMPT (SQLite — persists on disk, no more JSONBin/in-memory bin id)
 // ========================
-app.get('/api/prompt', (req, res) => {
+// The frontend's /prompt page gates humans behind a password, but that
+// check only exists in the frontend. This route sits on the backend's own
+// port, which Docker exposes to the host — without something here, anyone
+// who can reach port 3001 directly bypasses that password entirely. So the
+// backend also requires a shared secret that only the frontend's proxy
+// knows, on top of (not instead of) the frontend's own login.
+function hasValidInternalSecret(req) {
+  const expected = process.env.INTERNAL_API_SECRET;
+  if (!expected) return false; // not configured -> fail closed, not open
+  const provided = req.get('x-internal-api-secret') || '';
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+function requireInternalSecret(req, res, next) {
+  if (!hasValidInternalSecret(req)) {
+    return res.status(401).json({ success: false, error: 'Non autorisé.' });
+  }
+  next();
+}
+
+app.get('/api/prompt', requireInternalSecret, (req, res) => {
   res.json({
     success: true,
     prompt: getPrompt() || '',
@@ -125,7 +149,7 @@ app.get('/api/prompt', (req, res) => {
   });
 });
 
-app.post('/api/prompt', (req, res) => {
+app.post('/api/prompt', requireInternalSecret, (req, res) => {
   const { prompt } = req.body;
   if (typeof prompt !== 'string' || !prompt.trim()) {
     return res.status(400).json({ success: false, error: 'Prompt field required' });

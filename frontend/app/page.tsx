@@ -30,7 +30,7 @@ export default function Page() {
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.05] sm:leading-[0.95] text-balance">
             La clarté pour <br />
-            <span className="inline-block mt-1 sm:mt-2 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent [background-size:200%] animate-[gradient_8s_ease_infinite] italic">
+            <span className="inline-block mt-1 sm:mt-2 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent italic">
               votre santé.
             </span>
           </h1>

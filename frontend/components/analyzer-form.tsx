@@ -114,8 +114,8 @@ export function AnalyzerForm() {
         <CardContent className="p-4 sm:p-8 md:p-12">
           <div
             onClick={() => !isAnalyzing && fileInputRef.current?.click()}
-            className={`group relative flex flex-col items-center justify-center border-2 border-dashed rounded-2xl sm:rounded-3xl p-8 sm:p-12 md:p-16 transition-all cursor-pointer
-              ${isAnalyzing ? "opacity-50 cursor-not-allowed" : ""}
+            className={`group relative flex flex-col items-center justify-center border-2 border-dashed rounded-2xl sm:rounded-3xl p-8 sm:p-12 md:p-16 transition-[border-color,background-color,transform] duration-150 ease-out cursor-pointer active:scale-[0.995]
+              ${isAnalyzing ? "opacity-50 cursor-not-allowed active:scale-100" : ""}
               ${file ? "border-accent/50 bg-accent/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"}
             `}
           >
@@ -179,7 +179,7 @@ export function AnalyzerForm() {
             <Button
               onClick={handleAnalyze}
               disabled={!file || isAnalyzing}
-              className="w-full rounded-full px-6 sm:px-12 py-5 sm:py-7 text-base sm:text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3"
+              className="w-full rounded-full px-6 sm:px-12 py-5 sm:py-7 text-base sm:text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2 sm:gap-3"
             >
               {isAnalyzing && <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin shrink-0" />}
               {!isAnalyzing && <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
@@ -205,7 +205,7 @@ export function AnalyzerForm() {
             {result.fileBase64 && (
               <Button
                 onClick={downloadModifiedPdf}
-                className="w-full sm:w-auto rounded-full gap-2 px-6 py-5 sm:py-6 shadow-lg hover:shadow-xl transition-all group"
+                className="w-full sm:w-auto rounded-full gap-2 px-6 py-5 sm:py-6 shadow-lg hover:shadow-xl hover:-translate-y-0.5 group"
               >
                 <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform shrink-0" />
                 Télécharger le PDF annoté

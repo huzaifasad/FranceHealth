@@ -1,61 +1,22 @@
 # Updating the System Prompt
 
-This guide explains how to safely update the `systemPrompt` in the project.  
-Please follow these steps carefully to avoid breaking the code.
+The system prompt is stored in **SQLite** (`backend/data/app.db`, created automatically on first run), not hardcoded in `server.js`.
 
----
+## How to update it
 
-## Steps to Update the System Prompt
+**Option A — through the UI (recommended):** open `/prompt` on the frontend, edit the text, click Save. That page calls this backend's own `GET`/`POST /api/prompt`, which reads/writes the SQLite row directly.
 
-### 1. Open the Repository
-- Log in to your GitHub account
-- Open the project repository
+**Option B — via the API directly:**
+```bash
+curl -X POST http://localhost:3001/api/prompt \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "your full prompt text here"}'
+```
 
-### 2. Open `server.js`
-- Go to the main project folder
-- Open the file named `server.js`
+## First run / reset
 
-### 3. Find `systemPrompt`
-- Scroll down in `server.js`
-- Locate the variable named `systemPrompt`
+On its very first start, if the `settings` table is empty, the backend seeds itself from `backend/prompt.txt` (see `db.js` → `seedPromptIfEmpty()`). After that first seed, `prompt.txt` is not read again — the database is the source of truth. To force a full reset back to `prompt.txt`, stop the app and delete `backend/data/app.db`, then restart.
 
-### 4. Copy the Prompt Safely
-- Copy the **entire** `systemPrompt` content
-- Paste it into **Notepad** (or any plain text editor)
+## What the prompt is responsible for now
 
-> **Why Notepad?**  
-> Notepad saves plain text only and prevents accidental changes to other code, which could cause issues.
-
-### 5. Edit the Prompt
-- Modify the promo or instructions inside Notepad
-- Do **not** add extra characters, quotes, or formatting
-
-### 6. Update `server.js`
-- Copy the updated prompt from Notepad
-- Paste it back into `server.js`, replacing the old `systemPrompt`
-
-### 7. Save and Commit
-- Scroll down to the commit section
-- Add a commit message (e.g. `Updated systemPrompt`)
-- Click **Commit changes**
-
----
-
-## Important Notes
-
-- ❗ Do **not** change any other code in `server.js`
-- ❗ Editing other parts of the file may break the system
-- ✅ Only update the `systemPrompt` text
-
----
-
-## Collaboration Flow (If Applicable)
-
-- After committing, send the update request
-- Wait for approval
-- Once approved, changes will be merged and applied
-
----
-
-✅ That’s it!  
-Your system prompt is now updated safely and correctly.
+The prompt no longer needs to explain how to detect whether a value is in or out of range — that comparison is done deterministically in code (`lab-parser.js`) before the AI ever sees the results. The AI receives an already-classified list and is instructed never to recompute or override that status; its job is limited to writing the pedagogical (non-diagnostic) descriptions and following the required output structure.

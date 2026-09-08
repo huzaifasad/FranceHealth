@@ -3,6 +3,9 @@ node_modules/
 .pnp/
 .pnp.js
 
+# SQLite data (the system prompt lives here — never commit real runtime data)
+/data/
+
 # Next.js build output
 .next/
 out/

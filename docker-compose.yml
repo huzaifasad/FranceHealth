@@ -9,6 +9,9 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     ports:
       - "3001:3001"
+    volumes:
+      # SQLite file (holds the system prompt) — survives rebuilds/restarts.
+      - backend_data:/app/data
     networks:
       - francehealth
 
@@ -22,9 +25,6 @@ services:
         NEXT_PUBLIC_API_URL: http://backend:3001
     container_name: francehealth-frontend
     restart: unless-stopped
-    environment:
-      - JSONBIN_API_KEY=${JSONBIN_API_KEY}
-      - JSONBIN_BIN_ID=${JSONBIN_BIN_ID}
     ports:
       - "3000:3000"
     depends_on:
@@ -35,3 +35,6 @@ services:
 networks:
   francehealth:
     driver: bridge
+
+volumes:
+  backend_data:

@@ -3,9 +3,11 @@
 Two apps, one repo:
 
 - **`frontend/`** — Next.js app (the site + the `/prompt` editor)
-- **`backend/`** — Express API (PDF extraction, OpenAI call, PDF generation)
+- **`backend/`** — Express API (PDF extraction, deterministic in/out-of-range classification, OpenAI call, PDF generation, prompt storage)
 
-The frontend talks to the backend over HTTP. Locally/on your VPS with Docker, that's `http://backend:3001` (Docker's internal network). The backend also calls out to OpenAI directly, and separately fetches the AI system prompt from the frontend's own `/api/prompt` route.
+The frontend talks to the backend over HTTP for the analyze flow. Locally/on your VPS with Docker, that's `http://backend:3001` (Docker's internal network). The system prompt lives in the **backend's own SQLite database** (`backend/data/app.db`) — the frontend's `/prompt` page and `/api/prompt` route are just a thin editor UI/proxy on top of it, nothing is stored on the frontend side anymore.
+
+**PDF upload only** — there is no manual data-entry form. In/out-of-range status for each result is computed in code (`backend/lab-parser.js`), never by the AI — the AI only writes the pedagogical description using the status it's given.
 
 ---
 
@@ -15,7 +17,7 @@ The frontend talks to the backend over HTTP. Locally/on your VPS with Docker, th
    ```
    cp .env.example .env
    ```
-   Edit `.env` and set `OPENAI_API_KEY=sk-...`. (`JSONBIN_*` is optional — only needed for the `/prompt` editor page to persist across restarts.)
+   Edit `.env` and set `OPENAI_API_KEY=sk-...`. That's the only required secret now.
 
 2. Build and start both apps:
    ```
@@ -31,7 +33,7 @@ The frontend talks to the backend over HTTP. Locally/on your VPS with Docker, th
    docker compose down
    ```
 
-Every time you change code, re-run `docker compose up -d --build` — it rebuilds only what changed.
+Every time you change code, re-run `docker compose up -d --build` — it rebuilds only what changed. The SQLite prompt data lives in a named Docker volume (`backend_data`), so it survives rebuilds, restarts, and redeploys.
 
 ---
 
@@ -52,6 +54,14 @@ npm install
 echo "NEXT_PUBLIC_API_URL=http://localhost:3001" > .env.local
 npm run dev
 ```
+
+> Requires Node.js **22.5+** (the backend uses the built-in `node:sqlite` module — no native compilation, works the same on Windows/macOS/Linux). The Docker images already pin Node 24.
+
+---
+
+## Editing the AI prompt
+
+Open `/prompt` on the running frontend, edit, click Save. It's saved straight into the backend's SQLite database and used on the very next analysis — no third-party service, no restart needed, and it survives restarts/redeploys. See `backend/README.md` for the API-only way (`curl`) and how the first-run seed works.
 
 ---
 
@@ -115,6 +125,9 @@ From then on: **push to `main` → it's live.** That's the "one command" — `gi
 
 ---
 
-## Known issue worth fixing next
+## What changed recently (and why)
 
-`backend/server.js` always fetches the AI system prompt from `https://labresultsanalysis.vercel.app/api/prompt` — a hardcoded production URL — instead of from whichever frontend it's actually deployed alongside. Once this is running on your own VPS, the backend will still silently reach out to that separate Vercel deployment for its prompt rather than using the `/prompt` editor on the copy running next to it. Worth making that URL an env var (`PROMPT_API_URL`) pointing at `http://frontend:3000/api/prompt` in Docker, or your real domain in production.
+- **Renamed "Avencio Health" → "FranceHealth"** everywhere it showed up: UI, PDF header/footer, page titles, `package.json` names, log lines.
+- **Prompt storage moved off JSONBin, into the backend's own SQLite database.** The old design stored a JSONBin "bin id" in memory (`let binId`), which was wiped on every restart/redeploy, and the deployed frontend was found returning the placeholder "Welcome! ..." text instead of the real prompt. SQLite on a Docker volume actually persists.
+- **In/out-of-range is decided in code, not by the AI.** This was the cause of results randomly coming back marked all-abnormal — the model was doing its own (inconsistent) number parsing and comparison every time. `backend/lab-parser.js` now does that deterministically before the AI ever sees the results; the AI is instructed to use the status it's given and never recompute it.
+- **Manual data-entry form removed.** PDF upload is the only input now, on both the UI and the server action.

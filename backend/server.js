@@ -5,7 +5,8 @@ const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const OpenAI = require('openai').default;
 const { PdfReader } = require('pdfreader');
 require('dotenv').config();
-const axios =require ('axios')
+const { getPrompt, setPrompt, getPromptUpdatedAt } = require('./db');
+const { parseLabResults } = require('./lab-parser');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -114,6 +115,26 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ========================
+// SYSTEM PROMPT (SQLite — persists on disk, no more JSONBin/in-memory bin id)
+// ========================
+app.get('/api/prompt', (req, res) => {
+  res.json({
+    success: true,
+    prompt: getPrompt() || '',
+    updatedAt: getPromptUpdatedAt() || new Date().toISOString(),
+  });
+});
+
+app.post('/api/prompt', (req, res) => {
+  const { prompt } = req.body;
+  if (typeof prompt !== 'string' || !prompt.trim()) {
+    return res.status(400).json({ success: false, error: 'Prompt field required' });
+  }
+  setPrompt(prompt);
+  res.json({ success: true, prompt, updatedAt: new Date().toISOString() });
+});
+
 app.post('/api/extract-pdf-text', upload.single('pdf'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, error: 'No PDF file provided' });
@@ -129,11 +150,37 @@ app.post('/api/extract-pdf-text', upload.single('pdf'), async (req, res) => {
   }
 });
 
+// Builds the message handed to the AI: results the CODE already classified
+// as in/out of range. The AI is told explicitly never to recompute this —
+// its only job left is writing the pedagogical description and formatting
+// the structured report, not deciding the status.
+function buildClassifiedSummaryForAI(results) {
+  const abnormal = results.filter((r) => r.status === 'ABOVE' || r.status === 'BELOW');
+  const normal = results.filter((r) => r.status === 'NORMAL');
+  const unparsed = results.filter((r) => r.status === 'UNPARSED');
+
+  const fmt = (r) =>
+    `- ${r.name} : ${r.value ?? ''}${r.unit ? ' ' + r.unit : ''} (repères: ${r.rangeText}) [statut calculé: ${r.status}]`;
+
+  let out = `RÉSULTATS DÉJÀ CLASSÉS PAR LE CODE (statut déterministe, calculé par un programme — NE JAMAIS le recalculer, le remettre en question, ou le changer) :\n\n`;
+  out += `EN DEHORS DES REPÈRES (${abnormal.length}) :\n`;
+  out += abnormal.length ? abnormal.map(fmt).join('\n') : '(aucune)';
+  out += `\n\nDANS LES REPÈRES (${normal.length}) :\n`;
+  out += normal.length ? normal.map(fmt).join('\n') : '(aucune)';
+
+  if (unparsed.length) {
+    out += `\n\nLIGNES NON RECONNUES — AUCUN statut n'a pu être calculé pour celles-ci. Ne les classe NI dans, NI en dehors des repères ; décris-les séparément sans statut si tu les mentionnes (${unparsed.length}) :\n`;
+    out += unparsed.map((r) => `- ${r.name}`).join('\n');
+  }
+
+  return out;
+}
+
 app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
   try {
     let textInput = req.body.text;
     let pdfBuffer = null;
-    let fileName = 'analyse_avencio.pdf';
+    let fileName = 'analyse_francehealth.pdf';
 
     if (req.file) {
       console.log('Processing PDF:', req.file.originalname);
@@ -150,21 +197,24 @@ app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
     if (!textInput) {
       return res.status(400).json({ success: false, error: 'No text to analyze' });
     }
-async function getSystemPrompt() {
-  const res = await axios.get("https://labresultsanalysis.vercel.app/api/prompt");
-  return res.data?.success ? res.data.prompt : "";
-}
-    // const systemPrompt = ``;//use there so 
-    const systemPrompt = await getSystemPrompt(); // 🔥 THIS WAS MISSING
-    console.log(systemPrompt)
+
+    // Deterministic, code-based classification — this replaces asking the
+    // AI to parse numbers and judge in/out-of-range itself.
+    const parsedResults = parseLabResults(textInput);
+    const classifiedSummary = buildClassifiedSummaryForAI(parsedResults);
+
+    const systemPrompt = getPrompt() || '';
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Voici les résultats d'analyses biologiques à expliquer de façon pédagogique (SANS interprétation médicale) :\n\n${textInput}` },
+        {
+          role: 'user',
+          content: `${classifiedSummary}\n\n---\nTexte brut extrait du compte-rendu (pour contexte uniquement — ne sert PAS à recalculer un statut) :\n${textInput}`,
+        },
       ],
-      temperature: 0.1,  // Reduced for more consistent parsing
+      temperature: 0.1,
       max_tokens: 3500,
     });
 
@@ -181,6 +231,7 @@ async function getSystemPrompt() {
       analysis: analysisResult,
       fileBase64,
       fileName,
+      classification: parsedResults, // code-computed statuses, for transparency/debugging
     });
   } catch (error) {
     console.error('Analysis error:', error);
@@ -257,13 +308,9 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput) {
     color: C.blue 
   });
   
-  page.drawText('AVENCIO', { 
-    x: margin, y: height - 45, 
-    size: 28, font: boldFont, color: C.white 
-  });
-  page.drawText('HEALTH', { 
-    x: margin + 135, y: height - 45, 
-    size: 28, font: font, color: C.lightBlue 
+  page.drawText('FRANCEHEALTH', {
+    x: margin, y: height - 45,
+    size: 28, font: boldFont, color: C.white
   });
   
   page.drawText('Comprendre vos Analyses Biologiques', { 
@@ -678,9 +725,9 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput) {
     thickness: 1.5, color: C.silver 
   });
   
-  page.drawText('Avencio Health', { 
-    x: margin, y: footerY, 
-    size: 8, font: boldFont, color: C.navy 
+  page.drawText('FranceHealth', {
+    x: margin, y: footerY,
+    size: 8, font: boldFont, color: C.navy
   });
   
   const centerText = `Document genere le ${dateStr}`;
@@ -704,5 +751,5 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput) {
 
 // ========================
 app.listen(PORT, () => {
-  console.log(`🚀 Avencio API running on port ${PORT}`);
+  console.log(`🚀 FranceHealth API running on port ${PORT}`);
 });

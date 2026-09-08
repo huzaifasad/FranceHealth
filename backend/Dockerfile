@@ -1,4 +1,5 @@
-FROM node:20-alpine
+# node:24 — needs Node >= 22.5 for the built-in "node:sqlite" module (db.js)
+FROM node:24-alpine
 WORKDIR /app
 
 # Puppeteer is listed in package.json but unused by server.js — skip its

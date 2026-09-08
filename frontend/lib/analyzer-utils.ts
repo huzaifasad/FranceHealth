@@ -38,7 +38,7 @@ export async function appendResultsToPdf(originalPdfBuffer: Buffer, resultsText:
       color: rgb(0.02, 0.08, 0.16),
     })
 
-    page.drawText("AVENCIO HEALTH", {
+    page.drawText("FRANCEHEALTH", {
       x: margin,
       y: height - 55,
       size: 22,
@@ -160,7 +160,7 @@ export async function appendResultsToPdf(originalPdfBuffer: Buffer, resultsText:
       color: rgb(0.8, 0.8, 0.8),
     })
 
-    page.drawText("Propulsé par Avencio Health Analysis Service", {
+    page.drawText("Propulsé par FranceHealth Analysis Service", {
       x: margin,
       y: footerY,
       size: 7,

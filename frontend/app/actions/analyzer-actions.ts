@@ -41,6 +41,7 @@ export async function analyzeLabPdf(formData: FormData) {
       analysis: result.analysis,
       fileBase64: result.fileBase64,
       fileName: result.fileName,
+      classification: result.classification,
     }
   } catch (error: any) {
     console.error("❌ Error calling Express API:", error)

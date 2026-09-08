@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
+import { AnalysisProgress } from "@/components/analysis-progress"
+import { AnalysisReport, type ClassificationItem } from "@/lib/render-analysis"
 import {
   FileText,
   Loader2,
@@ -17,6 +19,7 @@ import {
   Download,
   Eye,
   CheckCircle2,
+  AlertTriangle,
   ShieldCheck,
   Trash2,
   Sparkles,
@@ -27,9 +30,15 @@ export function AnalyzerForm() {
   const { toast } = useToast()
   const [file, setFile] = useState<File | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [result, setResult] = useState<{ analysis: string; fileBase64?: string; fileName?: string } | null>(null)
+  const [result, setResult] = useState<{
+    analysis: string
+    fileBase64?: string
+    fileName?: string
+    classification?: ClassificationItem[]
+  } | null>(null)
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false)
   const [consentGiven, setConsentGiven] = useState(false)
+  const [finishing, setFinishing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,10 +88,13 @@ export function AnalyzerForm() {
       const response = await analyzeLabPdf(formData)
 
       if (response.success) {
+        setFinishing(true)
+        await new Promise((resolve) => setTimeout(resolve, 500)) // let the progress bar visibly reach 100%
         setResult({
           analysis: response.analysis!,
           fileBase64: response.fileBase64,
           fileName: response.fileName,
+          classification: response.classification,
         })
         toast({
           title: "Analyse terminée",
@@ -103,6 +115,7 @@ export function AnalyzerForm() {
       })
     } finally {
       setIsAnalyzing(false)
+      setFinishing(false)
     }
   }
 
@@ -216,13 +229,15 @@ export function AnalyzerForm() {
             <Button
               onClick={handleAnalyze}
               disabled={!file || !consentGiven || isAnalyzing}
-              className="w-full rounded-xl px-6 sm:px-12 py-5 sm:py-7 text-base sm:text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3"
+              className="w-full rounded-xl px-6 sm:px-12 py-5 sm:py-7 text-base sm:text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3"
             >
               {isAnalyzing && <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin shrink-0" />}
               {!isAnalyzing && <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
-              <span>{isAnalyzing ? "Analyse en cours avec l'IA..." : "Analyser mes résultats"}</span>
+              <span>{isAnalyzing ? "Analyse en cours..." : "Analyser mes résultats"}</span>
               {!isAnalyzing && <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
             </Button>
+
+            <AnalysisProgress active={isAnalyzing} complete={finishing} />
           </div>
         </CardContent>
       </Card>
@@ -260,9 +275,44 @@ export function AnalyzerForm() {
             )}
           </div>
 
+          {result.classification && result.classification.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="rounded-xl sm:rounded-2xl border border-border/50 bg-card/60 p-3 sm:p-5 text-center">
+                <p className="text-2xl sm:text-4xl font-black tracking-tight text-foreground">
+                  {result.classification.length}
+                </p>
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-muted-foreground mt-0.5">
+                  Analyses
+                </p>
+              </div>
+              <div className="rounded-xl sm:rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/20 p-3 sm:p-5 text-center">
+                <div className="flex items-center justify-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" />
+                  <p className="text-2xl sm:text-4xl font-black tracking-tight text-red-700 dark:text-red-300">
+                    {result.classification.filter((r) => r.status === "ABOVE" || r.status === "BELOW").length}
+                  </p>
+                </div>
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-red-700/70 dark:text-red-300/70 mt-0.5">
+                  Hors repères
+                </p>
+              </div>
+              <div className="rounded-xl sm:rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/20 p-3 sm:p-5 text-center">
+                <div className="flex items-center justify-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-2xl sm:text-4xl font-black tracking-tight text-emerald-700 dark:text-emerald-300">
+                    {result.classification.filter((r) => r.status === "NORMAL").length}
+                  </p>
+                </div>
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-emerald-700/70 dark:text-emerald-300/70 mt-0.5">
+                  Dans les repères
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-4 sm:gap-8">
             <Card className="rounded-[2rem] sm:rounded-[2.5rem] border-none bg-gradient-to-br from-primary/5 via-accent/5 to-background p-5 sm:p-8 md:p-10 shadow-xl">
-              <div className="prose prose-sm sm:prose-lg max-w-none dark:prose-invert prose-headings:font-black prose-headings:tracking-tight prose-p:leading-relaxed prose-p:text-foreground/90">
+              <div className="max-w-none">
                 <div className="flex items-start gap-3 sm:gap-5 mb-5 sm:mb-8 pb-4 sm:pb-6 border-b border-border/50">
                   <div className="bg-primary/10 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shrink-0">
                     <Sparkles className="w-5 h-5 sm:w-7 sm:h-7 text-primary" />
@@ -277,9 +327,7 @@ export function AnalyzerForm() {
                   </div>
                 </div>
 
-                <div className="whitespace-pre-wrap text-sm sm:text-lg leading-relaxed text-foreground/90 font-medium break-words">
-                  {result.analysis}
-                </div>
+                <AnalysisReport analysis={result.analysis} classification={result.classification} />
               </div>
             </Card>
 

@@ -96,13 +96,12 @@ function cleanLabText(rawText) {
   ];
 
   lines = lines.filter(line => !junkPatterns.some(p => p.test(line)));
-  lines = lines.map(line =>
-    line
-      .replace(/O/g, '0')
-      .replace(/l/g, '1')
-      .replace(/\s+/g, ' ')
-      .trim()
-  );
+  // NOTE: this used to also blindly replace every "O" with "0" and every "l"
+  // with "1" here, on the theory of fixing OCR misreads. But extractTextFromPdf
+  // reads the PDF's actual text layer (PdfReader), not an OCR'd image — the
+  // characters are already exact. That replacement was corrupting real words
+  // instead (e.g. "Hémoglobine" -> "Hémog1obine"), so it's gone.
+  lines = lines.map(line => line.replace(/\s+/g, ' ').trim());
 
   return lines.join('\n');
 }

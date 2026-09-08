@@ -41,7 +41,7 @@ export function SiteHeader() {
                 href={link.href}
                 className={
                   link.href === "/prompt"
-                    ? "rounded-full bg-foreground text-background px-6 py-2 font-semibold hover:bg-foreground/90 transition-colors"
+                    ? "rounded-xl bg-foreground text-background px-6 py-2 font-semibold hover:bg-foreground/90 transition-colors"
                     : "hover:text-primary transition-colors"
                 }
               >
@@ -51,7 +51,7 @@ export function SiteHeader() {
           </div>
           <div className="h-4 w-px bg-border/60 mx-2" />
           <ThemeToggle />
-          <Button variant="ghost" size="sm" className="rounded-full gap-2 font-semibold">
+          <Button variant="ghost" size="sm" className="rounded-xl gap-2 font-semibold">
             <UserCircle className="w-4 h-4" />
             Mon Espace
           </Button>
@@ -87,7 +87,7 @@ export function SiteHeader() {
                 ))}
               </div>
               <div className="mt-auto px-4 pb-6">
-                <Button variant="outline" className="w-full rounded-full gap-2 font-semibold justify-center h-12">
+                <Button variant="outline" className="w-full rounded-xl gap-2 font-semibold justify-center h-12">
                   <UserCircle className="w-4 h-4" />
                   Mon Espace
                 </Button>

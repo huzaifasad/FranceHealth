@@ -7,12 +7,14 @@ import { analyzeLabPdf } from "@/app/actions/analyzer-actions"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   FileText,
   Loader2,
   ArrowRight,
   Upload,
   Download,
+  Eye,
   CheckCircle2,
   ShieldCheck,
   Trash2,
@@ -25,6 +27,7 @@ export function AnalyzerForm() {
   const [file, setFile] = useState<File | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [result, setResult] = useState<{ analysis: string; fileBase64?: string; fileName?: string } | null>(null)
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,7 +150,7 @@ export function AnalyzerForm() {
                       e.stopPropagation()
                       setFile(null)
                     }}
-                    className="text-destructive hover:bg-destructive/10 rounded-full font-semibold"
+                    className="text-destructive hover:bg-destructive/10 rounded-xl font-semibold"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Supprimer le fichier
@@ -179,7 +182,7 @@ export function AnalyzerForm() {
             <Button
               onClick={handleAnalyze}
               disabled={!file || isAnalyzing}
-              className="w-full rounded-full px-6 sm:px-12 py-5 sm:py-7 text-base sm:text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3"
+              className="w-full rounded-xl px-6 sm:px-12 py-5 sm:py-7 text-base sm:text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3"
             >
               {isAnalyzing && <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin shrink-0" />}
               {!isAnalyzing && <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
@@ -203,13 +206,23 @@ export function AnalyzerForm() {
               </div>
             </div>
             {result.fileBase64 && (
-              <Button
-                onClick={downloadModifiedPdf}
-                className="w-full sm:w-auto rounded-full gap-2 px-6 py-5 sm:py-6 shadow-lg hover:shadow-xl transition-all group"
-              >
-                <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform shrink-0" />
-                Télécharger le PDF annoté
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                <Button
+                  onClick={() => setPdfPreviewOpen(true)}
+                  variant="outline"
+                  className="w-full sm:w-auto rounded-xl gap-2 px-5 py-5 sm:py-6 border-accent/40 text-accent hover:bg-accent/10 hover:text-accent"
+                >
+                  <Eye className="w-4 h-4 shrink-0" />
+                  Voir le PDF
+                </Button>
+                <Button
+                  onClick={downloadModifiedPdf}
+                  className="w-full sm:w-auto rounded-xl gap-2 px-6 py-5 sm:py-6 shadow-lg hover:shadow-xl transition-all group"
+                >
+                  <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform shrink-0" />
+                  Télécharger le PDF annoté
+                </Button>
+              </div>
             )}
           </div>
 
@@ -249,6 +262,23 @@ export function AnalyzerForm() {
           </Alert>
           </div>
         </div>
+      )}
+
+      {result?.fileBase64 && (
+        <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
+          <DialogContent className="max-w-4xl w-[95vw] h-[90vh] p-0 gap-0 rounded-2xl overflow-hidden flex flex-col">
+            <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0 text-left">
+              <DialogTitle className="text-base sm:text-lg">
+                {result.fileName || "PDF annoté"}
+              </DialogTitle>
+            </DialogHeader>
+            <iframe
+              src={`data:application/pdf;base64,${result.fileBase64}`}
+              title="Aperçu du PDF annoté"
+              className="flex-1 w-full bg-muted"
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

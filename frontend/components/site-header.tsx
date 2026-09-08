@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { HeartPulse, Menu, UserCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle, SheetClose } from "@/components/ui/sheet"
@@ -36,7 +37,7 @@ export function SiteHeader() {
         <div className="hidden lg:flex items-center gap-10">
           <div className="flex items-center gap-8 text-sm font-semibold text-muted-foreground">
             {NAV_LINKS.map((link) => (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
                 className={
@@ -46,7 +47,7 @@ export function SiteHeader() {
                 }
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
           <div className="h-4 w-px bg-border/60 mx-2" />
@@ -77,12 +78,12 @@ export function SiteHeader() {
               <div className="flex flex-col gap-1 px-4 mt-8">
                 {NAV_LINKS.map((link) => (
                   <SheetClose asChild key={link.label}>
-                    <a
+                    <Link
                       href={link.href}
                       className="rounded-xl px-4 py-3.5 text-base font-semibold text-foreground hover:bg-muted transition-colors"
                     >
                       {link.label}
-                    </a>
+                    </Link>
                   </SheetClose>
                 ))}
               </div>

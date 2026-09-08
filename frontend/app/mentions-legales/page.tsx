@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { AlertTriangle } from "lucide-react"
@@ -75,7 +76,7 @@ export default function LegalNoticePage() {
           <p>
             L'intelligence artificielle utilisée pour générer les explications pédagogiques est fournie par OpenAI,
             L.L.C. (États-Unis), en tant que sous-traitant technique — voir notre{" "}
-            <a href="/protection-des-donnees">politique de confidentialité</a> pour le détail des transferts de
+            <Link href="/protection-des-donnees">politique de confidentialité</Link> pour le détail des transferts de
             données associés.
           </p>
 

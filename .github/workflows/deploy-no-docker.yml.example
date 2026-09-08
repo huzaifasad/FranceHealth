@@ -1,0 +1,62 @@
+# Alternative to deploy.yml for a VPS with no Docker — uses PM2 instead.
+# Only one deploy workflow should be active at a time (both bind the same
+# ports on the VPS). To use this one instead of Docker:
+#   1. Delete or rename .github/workflows/deploy.yml
+#   2. Rename this file to deploy.yml (drop the .example extension)
+#
+# One-time setup on the VPS (see ecosystem.config.js at the repo root):
+#   npm i -g pm2
+#   cd /opt/francehealth && pm2 start ecosystem.config.js && pm2 save
+
+name: Build & Deploy (no Docker)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-check:
+    name: Build check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install & build frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Install backend
+        working-directory: ./backend
+        run: npm ci
+
+  deploy:
+    name: Deploy to VPS (PM2)
+    needs: build-check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key -p "${VPS_PORT:-22}" "$VPS_USER@$VPS_HOST" "
+            set -e
+            cd '${VPS_APP_DIR:-/opt/francehealth}'
+            git pull origin main
+            cd frontend && npm ci && npm run build && cd ..
+            cd backend && npm ci && cd ..
+            pm2 reload ecosystem.config.js --update-env
+          "

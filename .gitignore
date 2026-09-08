@@ -1,0 +1,10 @@
+# Root-level env file used by docker-compose
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/

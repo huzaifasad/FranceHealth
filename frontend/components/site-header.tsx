@@ -32,7 +32,9 @@ export function SiteHeader() {
   return (
     <nav className="border-b border-border/40 bg-background/60 backdrop-blur-xl sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-        <Logo />
+        <Link href="/" className="rounded-xl">
+          <Logo />
+        </Link>
 
         <div className="hidden lg:flex items-center gap-10">
           <div className="flex items-center gap-8 text-sm font-semibold text-muted-foreground">
@@ -73,7 +75,11 @@ export function SiteHeader() {
             <SheetContent side="right" className="w-[85vw] sm:w-80 flex flex-col">
               <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
               <div className="px-4 pt-6">
-                <Logo large />
+                <SheetClose asChild>
+                  <Link href="/" className="inline-flex rounded-xl">
+                    <Logo large />
+                  </Link>
+                </SheetClose>
               </div>
               <div className="flex flex-col gap-1 px-4 mt-8">
                 {NAV_LINKS.map((link) => (

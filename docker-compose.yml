@@ -25,6 +25,9 @@ services:
         NEXT_PUBLIC_API_URL: http://backend:3001
     container_name: celluid-frontend
     restart: unless-stopped
+    environment:
+      - PROMPT_ADMIN_PASSWORD=${PROMPT_ADMIN_PASSWORD}
+      - PROMPT_SESSION_SECRET=${PROMPT_SESSION_SECRET}
     ports:
       - "3000:3000"
     depends_on:

@@ -1,17 +1,44 @@
-# Updating the System Prompt
+# The System Prompt
 
-The system prompt is stored in **SQLite** (`backend/data/app.db`, created automatically on first run), not hardcoded in `server.js`.
+The system prompt is what tells the AI how to write its explanations — tone, what it's allowed to say, the exact output format, etc. It's stored in **SQLite** (`backend/data/app.db`, created automatically on first run), not hardcoded anywhere.
 
-## How to update it
+## Access — `/prompt` is password-protected
 
-**Option A — through the UI (recommended):** open `/prompt` on the frontend, edit the text, click Save. That page calls this backend's own `GET`/`POST /api/prompt`, which reads/writes the SQLite row directly.
+Editing the prompt controls the AI's actual safety behavior, so `/prompt` (on the frontend) requires a password before it shows anything.
 
-**Option B — via the API directly:**
+**How it works, in simple steps:**
+1. Someone opens `/prompt`.
+2. If they don't have a valid login session yet, they see a password box — nothing else, no prompt content is shown.
+3. They type the password (set once by you, see below) and click "Se connecter".
+4. The frontend checks it against `PROMPT_ADMIN_PASSWORD` (an environment variable, not a database — same place `OPENAI_API_KEY` lives). If it matches, it's given a signed cookie that proves "this browser is logged in" for 24 hours.
+5. With that cookie, `/prompt` shows the real editor, and the underlying `GET`/`POST /api/prompt` endpoints (which is what actually reads/writes the prompt) start accepting requests from that browser. Without it, both are blocked — reading the prompt requires login too, not just saving, since the text itself reveals how the AI's guardrails are worded.
+6. There's a "Déconnexion" button in the editor to end the session early; otherwise it just expires after 24h.
+
+**Setting the password (one-time):** add to your `.env` (the root one, read by `docker-compose.yml` if you're using Docker):
+```
+PROMPT_ADMIN_PASSWORD=pick-a-real-password-here
+PROMPT_SESSION_SECRET=some-long-random-string
+```
+`PROMPT_SESSION_SECRET` is optional but recommended — it's what signs the login cookie. Without it, a random one is generated each time the app starts, which works fine but logs everyone out on every restart/redeploy. Generate a good one with:
+```
+openssl rand -hex 32
+```
+
+**If you forget the password:** there's no reset flow — just change `PROMPT_ADMIN_PASSWORD` in `.env` and restart the frontend. The old password stops working immediately.
+
+**If `PROMPT_ADMIN_PASSWORD` isn't set at all:** `/prompt` shows a message explaining that, instead of ever letting anyone in. It fails locked, not open.
+
+## How to update the prompt itself
+
+**Option A — through the UI (recommended):** log into `/prompt`, edit the text, click Save. It's saved straight to SQLite and used on the very next analysis — no restart needed.
+
+**Option B — via the API directly**, once logged in through the browser (needs that session cookie — the easiest way to do this is via your browser's dev tools "copy as curl" on a request made while logged into `/prompt`):
 ```bash
 curl -X POST http://localhost:3001/api/prompt \
   -H "Content-Type: application/json" \
   -d '{"prompt": "your full prompt text here"}'
 ```
+Note: this example hits the **backend directly** (port 3001), which has no password check of its own — the password gate lives on the frontend's `/api/prompt` proxy. Only expose the backend's port outside your own machine/network if you understand that.
 
 ## First run / reset
 

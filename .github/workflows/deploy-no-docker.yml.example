@@ -6,7 +6,7 @@
 #
 # One-time setup on the VPS (see ecosystem.config.js at the repo root):
 #   npm i -g pm2
-#   cd /opt/francehealth && pm2 start ecosystem.config.js && pm2 save
+#   cd /opt/celluid && pm2 start ecosystem.config.js && pm2 save
 
 name: Build & Deploy (no Docker)
 
@@ -56,7 +56,7 @@ jobs:
 
           ssh -i ~/.ssh/deploy_key -p "${VPS_PORT:-22}" "$VPS_USER@$VPS_HOST" "
             set -e
-            cd '${VPS_APP_DIR:-/opt/francehealth}'
+            cd '${VPS_APP_DIR:-/opt/celluid}'
             git pull origin main
             cd frontend && npm ci && npm run build && cd ..
             cd backend && npm ci && cd ..

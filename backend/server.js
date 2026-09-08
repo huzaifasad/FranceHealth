@@ -168,7 +168,7 @@ app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
   try {
     let textInput = req.body.text;
     let pdfBuffer = null;
-    let fileName = 'analyse_francehealth.pdf';
+    let fileName = 'analyse_celluid.pdf';
 
     if (req.file) {
       console.log('Processing PDF:', req.file.originalname);
@@ -355,7 +355,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     color: C.blue 
   });
   
-  page.drawText('FRANCEHEALTH', {
+  page.drawText('CELLUID', {
     x: margin, y: height - 45,
     size: 28, font: boldFont, color: C.white
   });
@@ -787,7 +787,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     thickness: 1.5, color: C.silver 
   });
   
-  page.drawText('FranceHealth', {
+  page.drawText('Celluid', {
     x: margin, y: footerY,
     size: 8, font: boldFont, color: C.navy
   });
@@ -817,7 +817,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
 // just wants appendResultsToPdf() in isolation.
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`🚀 FranceHealth API running on port ${PORT}`);
+    console.log(`🚀 Celluid API running on port ${PORT}`);
   });
 }
 

@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "FranceHealth",
-  description: "FranceHealth",
+  title: "Celluid",
+  description: "Celluid",
   icons: {
     icon: [
       {

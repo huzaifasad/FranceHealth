@@ -1,4 +1,4 @@
-# FranceHealth
+# Celluid
 
 Two apps, one repo:
 
@@ -73,10 +73,10 @@ Open `/prompt` on the running frontend, edit, click Save. It's saved straight in
 ```bash
 # On the VPS
 sudo apt update && sudo apt install -y docker.io docker-compose-plugin git
-sudo mkdir -p /opt/francehealth
-sudo chown $USER:$USER /opt/francehealth
-git clone https://github.com/huzaifasad/FranceHealth.git /opt/francehealth
-cd /opt/francehealth
+sudo mkdir -p /opt/celluid
+sudo chown $USER:$USER /opt/celluid
+git clone https://github.com/huzaifasad/FranceHealth.git /opt/celluid  # repo is still named FranceHealth on GitHub — see note below
+cd /opt/celluid
 cp .env.example .env
 nano .env   # fill in your real OPENAI_API_KEY
 docker compose up -d --build
@@ -87,10 +87,10 @@ docker compose up -d --build
 # On the VPS
 sudo apt update && sudo apt install -y nodejs npm git
 sudo npm i -g pm2
-sudo mkdir -p /opt/francehealth
-sudo chown $USER:$USER /opt/francehealth
-git clone https://github.com/huzaifasad/FranceHealth.git /opt/francehealth
-cd /opt/francehealth
+sudo mkdir -p /opt/celluid
+sudo chown $USER:$USER /opt/celluid
+git clone https://github.com/huzaifasad/FranceHealth.git /opt/celluid
+cd /opt/celluid
 cd backend && npm install && cp ../.env.example .env && nano .env && cd ..
 cd frontend && npm install && npm run build && cd ..
 pm2 start ecosystem.config.js
@@ -111,7 +111,7 @@ To enable it, add these **repository secrets** (GitHub repo → Settings → Sec
 | `VPS_USER` | SSH username (e.g. `deploy` or `root`) |
 | `VPS_SSH_KEY` | The **private** key for a keypair whose **public** key is in that user's `~/.ssh/authorized_keys` on the VPS. Generate a dedicated deploy key — don't reuse your personal one. |
 | `VPS_PORT` | SSH port (optional, defaults to 22) |
-| `VPS_APP_DIR` | Path to the repo on the VPS (optional, defaults to `/opt/francehealth`) |
+| `VPS_APP_DIR` | Path to the repo on the VPS (optional, defaults to `/opt/celluid`) |
 
 Generate a deploy keypair (on your own machine, not in chat):
 ```
@@ -127,7 +127,8 @@ From then on: **push to `main` → it's live.** That's the "one command" — `gi
 
 ## What changed recently (and why)
 
-- **Renamed "Avencio Health" → "FranceHealth"** everywhere it showed up: UI, PDF header/footer, page titles, `package.json` names, log lines.
+- **Renamed the product to "Celluid"** — the client is buying `celluid.com` for this. Everything user-facing (UI text, PDF header/footer, page titles, `package.json`/container/pm2 names, log lines) now says Celluid instead of FranceHealth. **The GitHub repo itself is still named `FranceHealth`** (renaming that, and pointing the actual domain, is a separate step for once the domain purchase and VPS are in place — not done yet).
+- **Renamed "Avencio Health" → "FranceHealth"** (superseded by the above) everywhere it showed up: UI, PDF header/footer, page titles, `package.json` names, log lines.
 - **Prompt storage moved off JSONBin, into the backend's own SQLite database.** The old design stored a JSONBin "bin id" in memory (`let binId`), which was wiped on every restart/redeploy, and the deployed frontend was found returning the placeholder "Welcome! ..." text instead of the real prompt. SQLite on a Docker volume actually persists.
 - **In/out-of-range is decided in code, not by the AI.** This was the cause of results randomly coming back marked all-abnormal — the model was doing its own (inconsistent) number parsing and comparison every time. `backend/lab-parser.js` now does that deterministically before the AI ever sees the results; the AI is instructed to use the status it's given and never recompute it.
 - **Manual data-entry form removed.** PDF upload is the only input now, on both the UI and the server action.

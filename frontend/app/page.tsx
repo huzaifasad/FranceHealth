@@ -4,7 +4,7 @@ import type { Metadata } from "next"
 import { HeartPulse } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "FranceHealth | Analyseur de Résultats Biologiques Intelligent",
+  title: "Celluid | Analyseur de Résultats Biologiques Intelligent",
   description:
     "Comprenez vos analyses médicales en un instant grâce à notre IA sécurisée. Téléchargez votre PDF et recevez une explication claire.",
 }
@@ -53,15 +53,10 @@ export default function Page() {
                 <div className="w-12 h-12 rounded-2xl bg-primary-foreground shadow-xl flex items-center justify-center text-primary">
                   <HeartPulse className="w-7 h-7" />
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-black text-2xl tracking-tight leading-none uppercase">France</span>
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-accent uppercase opacity-90">
-                    Health
-                  </span>
-                </div>
+                <span className="font-black text-2xl tracking-tight leading-none">Celluid</span>
               </div>
               <p className="text-primary-foreground/80 text-base leading-relaxed max-w-md font-medium">
-                Nous croyons que chaque patient mérite de comprendre son bilan de santé. FranceHealth utilise
+                Nous croyons que chaque patient mérite de comprendre son bilan de santé. Celluid utilise
                 l'intelligence artificielle pour traduire la complexité biologique en clarté humaine.
               </p>
             </div>
@@ -96,7 +91,7 @@ export default function Page() {
               <h4 className="font-bold text-sm tracking-widest uppercase text-accent">Engagement Médical</h4>
               <div className="bg-primary-foreground/10 rounded-2xl p-6 border border-primary-foreground/20">
                 <p className="text-primary-foreground/70 text-sm leading-relaxed">
-                  FranceHealth est un outil d'accompagnement. Les explications fournies ne constituent pas un
+                  Celluid est un outil d'accompagnement. Les explications fournies ne constituent pas un
                   diagnostic médical. Consultez toujours votre médecin pour l'interprétation finale de vos résultats
                   biologiques.
                 </p>
@@ -113,7 +108,7 @@ export default function Page() {
           </div>
 
           <div className="pt-8 sm:pt-12 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6 text-[10px] font-bold tracking-widest uppercase text-primary-foreground/40 text-center">
-            <span>© 2026 FRANCEHEALTH. DÉVELOPPÉ POUR VOTRE BIEN-ÊTRE.</span>
+            <span>© 2026 CELLUID. DÉVELOPPÉ POUR VOTRE BIEN-ÊTRE.</span>
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 sm:gap-8">
               <a href="#" className="hover:text-primary-foreground transition-colors">
                 Mentions Légales

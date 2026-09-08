@@ -20,12 +20,7 @@ function Logo({ large = false }: { large?: boolean }) {
       >
         <HeartPulse className={large ? "w-6 h-6" : "w-5 h-5 sm:w-6 sm:h-6"} />
       </div>
-      <div className="flex flex-col">
-        <span className="font-black text-lg sm:text-xl tracking-tight leading-none uppercase">France</span>
-        <span className="text-[9px] sm:text-[10px] font-bold tracking-[0.2em] text-accent uppercase opacity-80">
-          Health
-        </span>
-      </div>
+      <span className="font-black text-lg sm:text-xl tracking-tight leading-none">Celluid</span>
     </div>
   )
 }

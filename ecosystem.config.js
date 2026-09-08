@@ -10,7 +10,7 @@
 module.exports = {
   apps: [
     {
-      name: "francehealth-backend",
+      name: "celluid-backend",
       cwd: "./backend",
       script: "server.js",
       env: {
@@ -20,7 +20,7 @@ module.exports = {
       },
     },
     {
-      name: "francehealth-frontend",
+      name: "celluid-frontend",
       cwd: "./frontend",
       script: "node_modules/next/dist/bin/next",
       args: "start -p 3000",

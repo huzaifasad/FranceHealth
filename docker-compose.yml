@@ -9,7 +9,12 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
     ports:
-      - "3001:3001"
+      # Bound to loopback only — Docker publishes ports via its own iptables
+      # rules, which bypass ufw entirely, so a ufw rule alone does NOT keep
+      # this off the public internet. Binding to 127.0.0.1 means Docker never
+      # listens on the public interface for this port at all, regardless of
+      # firewall rules. Nothing but nginx/this host needs to reach it anyway.
+      - "127.0.0.1:3001:3001"
     volumes:
       # SQLite file (holds the system prompt) — survives rebuilds/restarts.
       - backend_data:/app/data
@@ -31,7 +36,9 @@ services:
       - PROMPT_SESSION_SECRET=${PROMPT_SESSION_SECRET}
       - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
     ports:
-      - "3000:3000"
+      # Same reasoning as backend above: loopback only. nginx (on the host)
+      # is the actual public entry point now, proxying 80 -> 127.0.0.1:3000.
+      - "127.0.0.1:3000:3000"
     depends_on:
       - backend
     networks:

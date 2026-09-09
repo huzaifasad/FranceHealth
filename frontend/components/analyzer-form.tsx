@@ -23,6 +23,7 @@ import {
   Trash2,
   Sparkles,
   AlertCircle,
+  ExternalLink,
 } from "lucide-react"
 
 export function AnalyzerForm() {
@@ -38,23 +39,72 @@ export function AnalyzerForm() {
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false)
   const [consentGiven, setConsentGiven] = useState(false)
   const [finishing, setFinishing] = useState(false)
+  const [isDraggingOver, setIsDraggingOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const dragCounter = useRef(0)
+
+  const MAX_FILE_SIZE = 50 * 1024 * 1024 // matches the backend's multer limit
+
+  const validateAndSetFile = (candidate: File) => {
+    if (candidate.type !== "application/pdf") {
+      toast({
+        title: "Type de fichier incorrect",
+        description: "Veuillez sélectionner un fichier PDF valide.",
+        variant: "destructive",
+      })
+      return
+    }
+    if (candidate.size > MAX_FILE_SIZE) {
+      toast({
+        title: "Fichier trop volumineux",
+        description: `Ce PDF fait ${(candidate.size / 1024 / 1024).toFixed(1)} Mo — la taille maximale acceptée est de 50 Mo.`,
+        variant: "destructive",
+      })
+      return
+    }
+    setFile(candidate)
+    setResult(null)
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0]
-
-      if (selectedFile.type !== "application/pdf") {
-        toast({
-          title: "Type de fichier incorrect",
-          description: "Veuillez sélectionner un fichier PDF valide.",
-          variant: "destructive",
-        })
-        return
-      }
-      setFile(selectedFile)
-      setResult(null)
+      validateAndSetFile(e.target.files[0])
     }
+    // Allow re-selecting the exact same file later (e.g. after "Supprimer").
+    e.target.value = ""
+  }
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (isAnalyzing) return
+    dragCounter.current += 1
+    if (e.dataTransfer.types.includes("Files")) setIsDraggingOver(true)
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current -= 1
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0
+      setIsDraggingOver(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current = 0
+    setIsDraggingOver(false)
+    if (isAnalyzing) return
+    const dropped = e.dataTransfer.files?.[0]
+    if (dropped) validateAndSetFile(dropped)
   }
 
   const handleAnalyze = async () => {
@@ -134,15 +184,34 @@ export function AnalyzerForm() {
     })
   }
 
+  // Some mobile browsers (iOS Safari in particular) render a data: URI PDF
+  // inside an <iframe> as a blank page instead of the actual document —
+  // "ouvrir dans un nouvel onglet" is the reliable fallback there.
+  const openPdfInNewTab = () => {
+    if (!result?.fileBase64) return
+    const byteChars = atob(result.fileBase64)
+    const bytes = new Uint8Array(byteChars.length)
+    for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i)
+    const blob = new Blob([bytes], { type: "application/pdf" })
+    const blobUrl = URL.createObjectURL(blob)
+    window.open(blobUrl, "_blank", "noopener,noreferrer")
+    // Revoke well after the new tab has had time to load it.
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+  }
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 sm:space-y-12 pb-12 sm:pb-20">
       <Card className="border-none shadow-2xl shadow-primary/10 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-card/60 backdrop-blur-xl border border-border/50">
         <CardContent className="p-4 sm:p-8 md:p-12">
           <div
             onClick={() => !isAnalyzing && fileInputRef.current?.click()}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
             className={`group relative flex flex-col items-center justify-center border-2 border-dashed rounded-2xl sm:rounded-3xl p-8 sm:p-12 md:p-16 transition-all cursor-pointer
               ${isAnalyzing ? "opacity-50 cursor-not-allowed" : ""}
-              ${file ? "border-accent/50 bg-accent/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"}
+              ${isDraggingOver ? "border-primary bg-primary/10 scale-[1.01]" : file ? "border-accent/50 bg-accent/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"}
             `}
           >
             <input
@@ -181,16 +250,18 @@ export function AnalyzerForm() {
                 )}
               </div>
             ) : (
-              <div className="text-center space-y-3 sm:space-y-5">
-                <div className="bg-gradient-to-br from-primary/10 to-accent/10 p-4 sm:p-6 rounded-full w-fit mx-auto group-hover:scale-110 transition-transform duration-300">
+              <div className="text-center space-y-3 sm:space-y-5 pointer-events-none">
+                <div
+                  className={`bg-gradient-to-br from-primary/10 to-accent/10 p-4 sm:p-6 rounded-full w-fit mx-auto transition-transform duration-300 ${isDraggingOver ? "scale-110" : "group-hover:scale-110"}`}
+                >
                   <Upload className="w-10 h-10 sm:w-14 sm:h-14 text-primary" />
                 </div>
                 <div className="space-y-1.5 sm:space-y-2 px-2">
                   <p className="font-bold text-lg sm:text-2xl text-foreground text-balance">
-                    Déposez votre bilan médical PDF ici
+                    {isDraggingOver ? "Relâchez pour déposer le fichier" : "Déposez votre bilan médical PDF ici"}
                   </p>
                   <p className="text-muted-foreground text-sm sm:text-base">ou cliquez pour parcourir vos fichiers</p>
-                  <p className="text-xs text-muted-foreground/70">Format accepté: PDF • Taille max: 50 MB</p>
+                  <p className="text-xs text-muted-foreground/70">Format accepté: PDF • Taille max: 50 Mo</p>
                 </div>
               </div>
             )}
@@ -342,10 +413,25 @@ export function AnalyzerForm() {
       {result?.fileBase64 && (
         <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
           <DialogContent className="max-w-4xl w-[95vw] h-[90vh] p-0 gap-0 rounded-2xl overflow-hidden flex flex-col">
-            <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0 text-left">
-              <DialogTitle className="text-base sm:text-lg">
+            <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0 flex-row items-center justify-between gap-3 space-y-0">
+              <DialogTitle className="text-base sm:text-lg truncate text-left">
                 {result.fileName || "PDF annoté"}
               </DialogTitle>
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 mr-6">
+                <Button
+                  onClick={openPdfInNewTab}
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-lg gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Nouvel onglet</span>
+                </Button>
+                <Button onClick={downloadModifiedPdf} variant="secondary" size="sm" className="rounded-lg gap-1.5">
+                  <Download className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Télécharger</span>
+                </Button>
+              </div>
             </DialogHeader>
             <iframe
               src={`data:application/pdf;base64,${result.fileBase64}`}

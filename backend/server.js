@@ -411,7 +411,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     color: C.blue 
   });
   
-  page.drawText('Guide Pedagogique de vos Resultats', { 
+  page.drawText('Guide Pédagogique de vos Résultats', {
     x: margin + 5, y: y, 
     size: 18, font: boldFont, color: C.navy 
   });
@@ -445,11 +445,11 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     color: C.lightBlue 
   });
   
-  page.drawText('DOCUMENT PEDAGOGIQUE', { 
-    x: margin + 30, y: y - 18, 
-    size: 9, font: boldFont, color: C.navy 
+  page.drawText('DOCUMENT PÉDAGOGIQUE', {
+    x: margin + 30, y: y - 18,
+    size: 9, font: boldFont, color: C.navy
   });
-  page.drawText('- Aide a la comprehension des termes medicaux', { 
+  page.drawText('- Aide à la compréhension des termes médicaux', {
     x: margin + 165, y: y - 18, 
     size: 8, font: font, color: C.gray 
   });
@@ -785,10 +785,10 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
   });
   
   const disclaimerText = [
-    'Ce resume a pour objectif d\'aider a comprendre les analyses',
-    'figurant sur ce compte-rendu. Il ne constitue pas une interpretation',
-    'medicale. Pour toute question concernant vos resultats,',
-    'veuillez consulter votre medecin.',
+    'Ce résumé a pour objectif d\'aider à comprendre les analyses',
+    'figurant sur ce compte-rendu. Il ne constitue pas une interprétation',
+    'médicale. Pour toute question concernant vos résultats,',
+    'veuillez consulter votre médecin.',
   ];
   
   disclaimerText.forEach((txt, idx) => {
@@ -815,7 +815,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     size: 8, font: boldFont, color: C.navy
   });
   
-  const centerText = `Document genere le ${dateStr}`;
+  const centerText = `Document généré le ${dateStr}`;
   const centerW = font.widthOfTextAtSize(centerText, 7);
   page.drawText(centerText, { 
     x: (width - centerW) / 2, y: footerY, 

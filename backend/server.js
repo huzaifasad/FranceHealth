@@ -11,9 +11,20 @@ const { parseLabResults } = require('./lab-parser');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Built lazily, not at module load — the OpenAI SDK throws immediately in
+// its constructor if no API key is present, which used to crash anything
+// that just requires this file (e.g. pdf-color.test.js, for its exports
+// unrelated to OpenAI at all) whenever OPENAI_API_KEY isn't set. That's
+// exactly the case in CI, which correctly never has a real key — so this
+// was silently failing the GitHub Actions test step on every push. Only
+// actually needs to exist once /api/analyze is really called.
+let _openai = null;
+function getOpenAIClient() {
+  if (!_openai) {
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _openai;
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -216,7 +227,7 @@ app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
 
     const systemPrompt = getPrompt() || '';
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },

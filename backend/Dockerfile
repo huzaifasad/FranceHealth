@@ -12,6 +12,13 @@ RUN npm ci --no-audit --no-fund --omit=dev
 COPY . .
 
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 expressjs
+
+# Pre-create the data dir owned by the non-root user, so when the named
+# volume mounts over it, Docker seeds it with these permissions instead of
+# root:root — otherwise the SQLite file can never be created (ERR_SQLITE_ERROR
+# "unable to open database file").
+RUN mkdir -p /app/data && chown expressjs:nodejs /app/data
+
 USER expressjs
 
 EXPOSE 3001

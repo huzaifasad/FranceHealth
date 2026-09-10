@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Save, Code, LogOut } from "lucide-react"
+import { Save, Code, LogOut, ArrowLeft } from "lucide-react"
 
 export function PromptEditor() {
   const [prompt, setPrompt] = useState("")
@@ -56,6 +57,14 @@ export function PromptEditor() {
   return (
     <main className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-20">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 sm:mb-8"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Retour à l'accueil
+        </Link>
+
         {/* Header */}
         <div className="mb-8 sm:mb-12 flex items-start justify-between gap-4">
           <div>

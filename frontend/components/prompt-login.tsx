@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import type React from "react"
-import { Lock } from "lucide-react"
+import Link from "next/link"
+import { Lock, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function PromptLogin({ passwordConfigured }: { passwordConfigured: boolean }) {
@@ -36,6 +37,14 @@ export function PromptLogin({ passwordConfigured }: { passwordConfigured: boolea
   return (
     <main className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Retour à l'accueil
+        </Link>
+
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-foreground rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Lock className="w-6 h-6 text-background" />

@@ -13,7 +13,11 @@
 import type { ReactNode } from "react"
 
 // **bold** and [text](url) -- the two inline constructs the policy uses.
-function renderInline(text: string): ReactNode[] {
+// Exported too: the consent checkbox text (analyzer-form.tsx) is a single
+// admin-editable line with one embedded link ("[politique de
+// confidentialité](/protection-des-donnees)") -- same construct, same
+// safe-by-construction reasoning, not worth a second copy of this regex.
+export function renderInline(text: string): ReactNode[] {
   const nodes: ReactNode[] = []
   const pattern = /\*\*(.+?)\*\*|\[([^\]]+)\]\(([^)]+)\)/g
   let lastIndex = 0

@@ -13,6 +13,9 @@ const {
   getPrivacyPolicy,
   setPrivacyPolicy,
   getPrivacyPolicyUpdatedAt,
+  getConsentText,
+  setConsentText,
+  getConsentTextUpdatedAt,
 } = require('./db');
 const { parseLabResults } = require('./lab-parser');
 const app = express();
@@ -193,6 +196,25 @@ app.post('/api/privacy-policy', requireInternalSecret, (req, res) => {
     return res.status(400).json({ success: false, error: 'Content field required' });
   }
   setPrivacyPolicy(content);
+  res.json({ success: true, content, updatedAt: new Date().toISOString() });
+});
+
+// Same storage/access pattern again -- the consent checkbox label shown on
+// the homepage before analyzing, editable from the same /prompt admin page.
+app.get('/api/consent-text', requireInternalSecret, (req, res) => {
+  res.json({
+    success: true,
+    content: getConsentText() || '',
+    updatedAt: getConsentTextUpdatedAt() || new Date().toISOString(),
+  });
+});
+
+app.post('/api/consent-text', requireInternalSecret, (req, res) => {
+  const { content } = req.body;
+  if (typeof content !== 'string' || !content.trim()) {
+    return res.status(400).json({ success: false, error: 'Content field required' });
+  }
+  setConsentText(content);
   res.json({ success: true, content, updatedAt: new Date().toISOString() });
 });
 

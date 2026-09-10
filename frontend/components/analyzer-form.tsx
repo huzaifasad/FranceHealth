@@ -2,7 +2,8 @@
 
 import type React from "react"
 import { useToast } from "@/hooks/use-toast"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
+import { renderInline } from "@/lib/policy-markdown"
 import { analyzeLabPdf } from "@/app/actions/analyzer-actions"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -42,6 +43,21 @@ export function AnalyzerForm() {
   const [isDraggingOver, setIsDraggingOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragCounter = useRef(0)
+
+  // Admin-editable via /prompt ("Texte de consentement" tab) -- seeded with
+  // the same text as the SQLite default so there's no flash of missing/
+  // different text while this fetch is in flight.
+  const [consentText, setConsentText] = useState(
+    "J'accepte la [politique de confidentialité](/protection-des-donnees) et le traitement de mes données de santé par IA"
+  )
+  useEffect(() => {
+    fetch("/api/consent-text")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.content) setConsentText(data.content)
+      })
+      .catch(() => {})
+  }, [])
 
   const MAX_FILE_SIZE = 50 * 1024 * 1024 // matches the backend's multer limit
 
@@ -286,18 +302,16 @@ export function AnalyzerForm() {
                 disabled={isAnalyzing}
                 className="shrink-0"
               />
-              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-                J'accepte la{" "}
-                <a
-                  href="/protection-des-donnees"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-accent underline underline-offset-2 hover:text-accent/80"
-                >
-                  politique de confidentialité
-                </a>{" "}
-                et le traitement de mes données de santé par IA
+              <span
+                className="text-xs text-muted-foreground group-hover:text-foreground transition-colors [&_a]:text-accent [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-accent/80"
+                onClick={(e) => {
+                  // The label wraps this span so clicking anywhere toggles
+                  // the checkbox -- except the link itself, which should
+                  // navigate instead.
+                  if ((e.target as HTMLElement).tagName === "A") e.stopPropagation()
+                }}
+              >
+                {renderInline(consentText)}
               </span>
             </label>
 

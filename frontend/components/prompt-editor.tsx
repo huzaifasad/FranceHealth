@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Save, Code, LogOut, ArrowLeft, Info } from "lucide-react"
+import { Save, Code, LogOut, ArrowLeft, Info, Sparkles, ShieldCheck, CheckSquare } from "lucide-react"
 import { PrivacyPolicyEditor } from "@/components/privacy-policy-editor"
+import { ConsentTextEditor } from "@/components/consent-text-editor"
 
 export function PromptEditor() {
   const [prompt, setPrompt] = useState("")
@@ -89,10 +90,51 @@ export function PromptEditor() {
           </Button>
         </div>
 
+        {/* Guide -- what each tab below actually controls, and where it shows up on the real site */}
+        <div className="mb-8 sm:mb-10 rounded-xl border border-border overflow-hidden">
+          <div className="px-4 sm:px-6 py-3 bg-muted/40 border-b border-border">
+            <h2 className="text-sm font-semibold text-foreground">Guide — three editable areas, one page</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              All three save straight to the database and go live immediately — no restart, no redeploy, no code.
+            </p>
+          </div>
+          <div className="divide-y divide-border">
+            <div className="flex items-start gap-3 sm:gap-4 px-4 sm:px-6 py-4">
+              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Sparkles className="w-4 h-4 text-accent" />
+              </div>
+              <div className="text-sm">
+                <span className="font-semibold text-foreground">Prompt IA</span>{" "}
+                <span className="text-muted-foreground">— how the AI writes each analysis explanation (tone, structure, what it's allowed to say). Never decides in/out-of-range status, only the wording. Shows up: right after someone uploads a PDF on the homepage.</span>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 sm:gap-4 px-4 sm:px-6 py-4">
+              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
+                <ShieldCheck className="w-4 h-4 text-accent" />
+              </div>
+              <div className="text-sm">
+                <span className="font-semibold text-foreground">Politique de confidentialité</span>{" "}
+                <span className="text-muted-foreground">— the full legal text: company identity, data retention, rights, etc. Shows up: the public </span>
+                <code className="px-1.5 py-0.5 bg-muted rounded text-[0.85em]">/protection-des-donnees</code> page, linked from the footer and the homepage's consent checkbox.
+              </div>
+            </div>
+            <div className="flex items-start gap-3 sm:gap-4 px-4 sm:px-6 py-4">
+              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
+                <CheckSquare className="w-4 h-4 text-accent" />
+              </div>
+              <div className="text-sm">
+                <span className="font-semibold text-foreground">Texte de consentement</span>{" "}
+                <span className="text-muted-foreground">— the one-line label next to the checkbox someone must tick before analyzing. Shows up: homepage, directly under the "Analyser mes résultats" button.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <Tabs defaultValue="prompt">
           <TabsList className="mb-6 sm:mb-8">
             <TabsTrigger value="prompt">Prompt IA</TabsTrigger>
             <TabsTrigger value="privacy">Politique de confidentialité</TabsTrigger>
+            <TabsTrigger value="consent">Texte de consentement</TabsTrigger>
           </TabsList>
 
           <TabsContent value="prompt">
@@ -183,6 +225,10 @@ export function PromptEditor() {
 
           <TabsContent value="privacy">
             <PrivacyPolicyEditor />
+          </TabsContent>
+
+          <TabsContent value="consent">
+            <ConsentTextEditor />
           </TabsContent>
         </Tabs>
       </div>

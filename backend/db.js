@@ -57,6 +57,7 @@ function seedIfEmpty(key, seedFileName, fallbackText, label) {
 
 const PROMPT_KEY = "system_prompt";
 const PRIVACY_POLICY_KEY = "privacy_policy";
+const CONSENT_TEXT_KEY = "consent_text";
 
 const getPrompt = () => getSetting(PROMPT_KEY);
 const setPrompt = (value) => setSetting(PROMPT_KEY, value);
@@ -66,12 +67,22 @@ const getPrivacyPolicy = () => getSetting(PRIVACY_POLICY_KEY);
 const setPrivacyPolicy = (value) => setSetting(PRIVACY_POLICY_KEY, value);
 const getPrivacyPolicyUpdatedAt = () => getSettingUpdatedAt(PRIVACY_POLICY_KEY);
 
+const getConsentText = () => getSetting(CONSENT_TEXT_KEY);
+const setConsentText = (value) => setSetting(CONSENT_TEXT_KEY, value);
+const getConsentTextUpdatedAt = () => getSettingUpdatedAt(CONSENT_TEXT_KEY);
+
 seedIfEmpty(PROMPT_KEY, "prompt.txt", "Welcome! This is your default prompt. Edit it above and save.", "system prompt");
 seedIfEmpty(
   PRIVACY_POLICY_KEY,
   "privacy-policy.txt",
   "## Politique de confidentialité\n\nÀ compléter.",
   "privacy policy"
+);
+seedIfEmpty(
+  CONSENT_TEXT_KEY,
+  "consent-text.txt",
+  "J'accepte la [politique de confidentialité](/protection-des-donnees) et le traitement de mes données de santé par IA",
+  "consent checkbox text"
 );
 
 module.exports = {
@@ -81,4 +92,7 @@ module.exports = {
   getPrivacyPolicy,
   setPrivacyPolicy,
   getPrivacyPolicyUpdatedAt,
+  getConsentText,
+  setConsentText,
+  getConsentTextUpdatedAt,
 };

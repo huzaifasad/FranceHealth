@@ -35,9 +35,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         {/* Was defaultTheme="system" -- first-time visitors on a dark-mode
-            OS got a black page by default. Defaulting to light instead;
-            the header's theme toggle still lets anyone switch to dark. */}
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+            OS got a black page. forcedTheme="light" always wins: unlike
+            defaultTheme, it overrides a returning visitor's previously
+            stored dark preference too, not just the first-visit default.
+            The toggle is removed from the header to match -- there's
+            nothing left for it to switch to. */}
+        <ThemeProvider attribute="class" forcedTheme="light" disableTransitionOnChange>
           {children}
           <Toaster />
         </ThemeProvider>

@@ -46,8 +46,6 @@ Vos données ne sont ni vendues, ni louées, ni utilisées à des fins publicita
 
 Ce site utilise Vercel Analytics, un outil de mesure d'audience conçu pour fonctionner **sans dépôt de cookie** et sans traçage individuel : les statistiques de visite sont agrégées et anonymisées. Aucun bandeau de consentement aux cookies n'est donc requis pour cet outil.
 
-Votre préférence d'affichage (thème clair/sombre) est mémorisée localement dans votre navigateur (localStorage), et n'est jamais transmise à nos serveurs.
-
 Si d'autres outils de mesure ou de traçage venaient à être ajoutés au site, cette politique serait mise à jour et un recueil de consentement conforme serait mis en place au moment de leur introduction.
 
 ## 8. Sécurité

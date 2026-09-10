@@ -5,7 +5,6 @@ import Link from "next/link"
 import { HeartPulse, Menu, UserCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle, SheetClose } from "@/components/ui/sheet"
-import { ThemeToggle } from "@/components/theme-toggle"
 
 const NAV_LINKS = [
   { href: "/prompt", label: "Éditer le prompt" },
@@ -53,7 +52,6 @@ export function SiteHeader() {
             ))}
           </div>
           <div className="h-4 w-px bg-border/60 mx-2" />
-          <ThemeToggle />
           <Button variant="ghost" size="sm" className="rounded-xl gap-2 font-semibold">
             <UserCircle className="w-4 h-4" />
             Mon Espace
@@ -61,7 +59,6 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-1 lg:hidden">
-          <ThemeToggle />
           <Sheet open={open} onOpenChange={setOpen}>
             <Button
               variant="ghost"

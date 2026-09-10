@@ -1,0 +1,81 @@
+## 1. Responsable du traitement
+
+Le responsable du traitement des données à caractère personnel collectées sur ce site est : [Raison sociale de l'entreprise], [forme juridique] au capital de [montant], immatriculée au RCS de [ville] sous le numéro [SIREN/SIRET], dont le siège social est situé [adresse complète].
+
+Contact en matière de protection des données : [email dédié, ex. dpo@cellude.com].
+
+## 2. Données collectées
+
+Dans le cadre de l'utilisation du service d'analyse de résultats biologiques, Cellude traite :
+
+- **Le contenu du compte-rendu PDF que vous déposez**, qui constitue une donnée de santé au sens de l'article 4.15 du RGPD (résultats d'analyses biologiques, valeurs, unités, intervalles de référence).
+- **Des données techniques standard** collectées automatiquement par tout site web : adresse IP, type de navigateur, pages consultées, horodatage — via notre outil de mesure d'audience (voir section 7, « Cookies et mesure d'audience »).
+
+Le site ne comporte à ce jour aucun système de compte utilisateur : aucune donnée d'identité (nom, email, mot de passe) n'est demandée ni collectée pour utiliser l'analyseur.
+
+## 3. Finalités du traitement
+
+Vos données sont traitées dans les finalités suivantes, et uniquement celles-ci :
+
+- Extraire le texte de votre compte-rendu PDF ;
+- Générer, au moyen d'un modèle d'intelligence artificielle, une explication pédagogique des termes figurant sur votre bilan ;
+- Produire, si vous le demandez, une version annotée téléchargeable du document.
+
+**Cette explication est strictement pédagogique et ne constitue en aucun cas un diagnostic ou un avis médical.** Elle ne doit jamais se substituer à la consultation d'un professionnel de santé.
+
+## 4. Base légale du traitement
+
+S'agissant d'une donnée de santé (catégorie particulière de données, article 9 du RGPD), le traitement repose sur votre **consentement explicite** (article 9.2.a du RGPD), recueilli avant chaque analyse. Vous pouvez retirer ce consentement à tout moment, sans effet rétroactif sur les traitements déjà réalisés ; le retrait de votre consentement empêche simplement toute nouvelle analyse.
+
+## 5. Durée de conservation
+
+Le compte-rendu que vous déposez et le texte qui en est extrait **ne sont pas stockés** par nos serveurs au-delà du temps nécessaire au traitement de votre demande : ils sont traités en mémoire et ne sont écrits sur aucune base de données ni aucun disque de notre infrastructure. Une fois la réponse renvoyée à votre navigateur, aucune copie n'est conservée de notre côté.
+
+Notre sous-traitant d'intelligence artificielle (voir section 6) peut, de son côté, conserver temporairement les données transmises via son API à des fins de lutte contre les abus et de sécurité, pour une durée limitée, sans les utiliser pour entraîner ses modèles — conformément à sa politique de confidentialité et aux clauses contractuelles en vigueur avec Cellude. Nous vous invitons à consulter la [lien vers la politique de confidentialité API d'OpenAI en vigueur].
+
+Les données techniques de mesure d'audience sont conservées selon la politique de notre prestataire (voir section 7).
+
+## 6. Destinataires et sous-traitants
+
+Vos données ne sont ni vendues, ni louées, ni utilisées à des fins publicitaires. Elles sont transmises aux seuls destinataires suivants :
+
+- **OpenAI, L.L.C.** (États-Unis) — sous-traitant technique chargé de la génération de l'explication pédagogique. Cette transmission implique un transfert de données hors de l'Union européenne ; il est encadré par les Clauses Contractuelles Types de la Commission européenne et/ou le cadre de protection des données UE-États-Unis (Data Privacy Framework), selon les termes en vigueur au moment du traitement.
+- **[Hébergeur du site et de l'API — nom, pays d'hébergement]** — hébergement technique de l'application.
+
+## 7. Cookies et mesure d'audience
+
+Ce site utilise Vercel Analytics, un outil de mesure d'audience conçu pour fonctionner **sans dépôt de cookie** et sans traçage individuel : les statistiques de visite sont agrégées et anonymisées. Aucun bandeau de consentement aux cookies n'est donc requis pour cet outil.
+
+Votre préférence d'affichage (thème clair/sombre) est mémorisée localement dans votre navigateur (localStorage), et n'est jamais transmise à nos serveurs.
+
+Si d'autres outils de mesure ou de traçage venaient à être ajoutés au site, cette politique serait mise à jour et un recueil de consentement conforme serait mis en place au moment de leur introduction.
+
+## 8. Sécurité
+
+Les échanges entre votre navigateur et nos serveurs sont chiffrés (HTTPS/TLS). L'accès aux infrastructures serveur est restreint et journalisé. [Détailler ici les mesures de sécurité spécifiques réellement mises en œuvre : chiffrement au repos, gestion des accès, audits, etc.]
+
+## 9. Vos droits
+
+Conformément aux articles 15 à 22 du RGPD et à la loi Informatique et Libertés, vous disposez des droits suivants :
+
+- Droit d'accès à vos données ;
+- Droit de rectification ;
+- Droit à l'effacement (« droit à l'oubli ») ;
+- Droit à la limitation du traitement ;
+- Droit à la portabilité de vos données ;
+- Droit d'opposition ;
+- Droit de retirer votre consentement à tout moment.
+
+Pour exercer ces droits, contactez-nous à l'adresse [email dédié]. Vous disposez également du droit d'introduire une réclamation auprès de la [Commission Nationale de l'Informatique et des Libertés (CNIL)](https://www.cnil.fr) — 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07 — si vous estimez que vos droits ne sont pas respectés.
+
+## 10. Mineurs
+
+Ce service n'est pas destiné aux personnes mineures utilisées sans l'accompagnement d'un responsable légal. Nous ne collectons pas sciemment de données concernant des mineurs.
+
+## 11. Modification de cette politique
+
+Cette politique peut être mise à jour pour refléter des évolutions légales, techniques ou organisationnelles. La date de dernière mise à jour figure en haut de cette page.
+
+## 12. Contact
+
+Pour toute question relative à cette politique ou à vos données personnelles : [email de contact].

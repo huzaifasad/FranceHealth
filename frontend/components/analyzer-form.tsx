@@ -224,7 +224,7 @@ export function AnalyzerForm() {
             />
 
             {file ? (
-              <div className="text-center space-y-4 sm:space-y-5 animate-in fade-in zoom-in duration-300 w-full">
+              <div key="file-selected" className="text-center space-y-4 sm:space-y-5 animate-in fade-in zoom-in duration-300 w-full">
                 <div className="bg-gradient-to-br from-primary/20 to-accent/20 p-4 sm:p-6 rounded-2xl sm:rounded-3xl w-fit mx-auto border border-primary/30 shadow-lg">
                   <FileText className="w-10 h-10 sm:w-14 sm:h-14 text-primary" />
                 </div>
@@ -250,7 +250,7 @@ export function AnalyzerForm() {
                 )}
               </div>
             ) : (
-              <div className="text-center space-y-3 sm:space-y-5 pointer-events-none">
+              <div key="empty-state" className="text-center space-y-3 sm:space-y-5 pointer-events-none">
                 <div
                   className={`bg-gradient-to-br from-primary/10 to-accent/10 p-4 sm:p-6 rounded-full w-fit mx-auto transition-transform duration-300 ${isDraggingOver ? "scale-110" : "group-hover:scale-110"}`}
                 >

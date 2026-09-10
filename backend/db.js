@@ -23,37 +23,62 @@ db.exec(`
   );
 `);
 
-const PROMPT_KEY = "system_prompt";
-
-function getPrompt() {
-  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(PROMPT_KEY);
+// Generic key-value helpers -- both the AI system prompt and the privacy
+// policy text are just named rows in the same "settings" table, so they
+// share this one implementation instead of duplicating the same three
+// functions per field.
+function getSetting(key) {
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
   return row ? row.value : null;
 }
 
-function setPrompt(value) {
+function setSetting(key, value) {
   db.prepare(
     `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
-  ).run(PROMPT_KEY, value, new Date().toISOString());
+  ).run(key, value, new Date().toISOString());
 }
 
-function getPromptUpdatedAt() {
-  const row = db.prepare("SELECT updated_at FROM settings WHERE key = ?").get(PROMPT_KEY);
+function getSettingUpdatedAt(key) {
+  const row = db.prepare("SELECT updated_at FROM settings WHERE key = ?").get(key);
   return row ? row.updated_at : null;
 }
 
-// Seed with the real prompt on first run so the app never falls back to a
-// generic placeholder — only happens once, the first time app.db is created.
-function seedPromptIfEmpty() {
-  if (getPrompt() !== null) return;
-  const seedPath = path.join(__dirname, "prompt.txt");
-  const seedText = fs.existsSync(seedPath)
-    ? fs.readFileSync(seedPath, "utf8")
-    : "Welcome! This is your default prompt. Edit it above and save.";
-  setPrompt(seedText);
-  console.log("🌱 Seeded system prompt from prompt.txt into SQLite (first run).");
+// Seeds a setting from a local seed file, once -- only the very first time
+// app.db is created for that key, so the app never falls back to a generic
+// placeholder, and never overwrites a real edit made after that.
+function seedIfEmpty(key, seedFileName, fallbackText, label) {
+  if (getSetting(key) !== null) return;
+  const seedPath = path.join(__dirname, seedFileName);
+  const seedText = fs.existsSync(seedPath) ? fs.readFileSync(seedPath, "utf8") : fallbackText;
+  setSetting(key, seedText);
+  console.log(`🌱 Seeded ${label} from ${seedFileName} into SQLite (first run).`);
 }
 
-seedPromptIfEmpty();
+const PROMPT_KEY = "system_prompt";
+const PRIVACY_POLICY_KEY = "privacy_policy";
 
-module.exports = { getPrompt, setPrompt, getPromptUpdatedAt };
+const getPrompt = () => getSetting(PROMPT_KEY);
+const setPrompt = (value) => setSetting(PROMPT_KEY, value);
+const getPromptUpdatedAt = () => getSettingUpdatedAt(PROMPT_KEY);
+
+const getPrivacyPolicy = () => getSetting(PRIVACY_POLICY_KEY);
+const setPrivacyPolicy = (value) => setSetting(PRIVACY_POLICY_KEY, value);
+const getPrivacyPolicyUpdatedAt = () => getSettingUpdatedAt(PRIVACY_POLICY_KEY);
+
+seedIfEmpty(PROMPT_KEY, "prompt.txt", "Welcome! This is your default prompt. Edit it above and save.", "system prompt");
+seedIfEmpty(
+  PRIVACY_POLICY_KEY,
+  "privacy-policy.txt",
+  "## Politique de confidentialité\n\nÀ compléter.",
+  "privacy policy"
+);
+
+module.exports = {
+  getPrompt,
+  setPrompt,
+  getPromptUpdatedAt,
+  getPrivacyPolicy,
+  setPrivacyPolicy,
+  getPrivacyPolicyUpdatedAt,
+};

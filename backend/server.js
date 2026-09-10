@@ -4,9 +4,16 @@ const crypto = require('crypto');
 const multer = require('multer');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const OpenAI = require('openai').default;
-const { PdfReader } = require('pdfreader');
+const { PDFParse, PasswordException, InvalidPDFException } = require('pdf-parse');
 require('dotenv').config();
-const { getPrompt, setPrompt, getPromptUpdatedAt } = require('./db');
+const {
+  getPrompt,
+  setPrompt,
+  getPromptUpdatedAt,
+  getPrivacyPolicy,
+  setPrivacyPolicy,
+  getPrivacyPolicyUpdatedAt,
+} = require('./db');
 const { parseLabResults } = require('./lab-parser');
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -38,53 +45,48 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // ========================
 // PDF TEXT EXTRACTION
 // ========================
+// Built on pdf-parse (wraps Mozilla's pdf.js -- the same engine Firefox and
+// Chrome render PDFs with), replacing the previous pdfreader/pdf2json-based
+// implementation. That one reported text at whatever granularity the source
+// PDF's own generator happened to use -- sometimes whole phrases per item,
+// sometimes one glyph per item -- and the old code always inserted a literal
+// space between same-line items, which silently corrupted any PDF using the
+// glyph-per-item style (e.g. "Ibrahima Daff" extracted as "I b r a h i m a
+// D a f f"). Verified against several real-world PDFs, including one that
+// reproduced this exact corruption, before making this swap -- see the
+// session notes for the comparison. pdf.js also degrades far more gracefully
+// on malformed/non-PDF input: pdf2json's errors sometimes had no .message at
+// all ("PDF extraction failed: undefined"), pdf-parse throws typed, always-
+// readable exceptions.
 async function extractTextFromPdf(buffer) {
+  let parser;
   try {
-    const rawText = await new Promise((resolve, reject) => {
-      let pages = [];
-      let currentPage = [];
-      let lastY = null;
+    parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
 
-      new PdfReader().parseBuffer(buffer, (err, item) => {
-        if (err) return reject(err);
-        if (!item) {
-          if (currentPage.length) pages.push(currentPage.join('\n'));
-          resolve(pages.join('\n\n'));
-          return;
-        }
-
-        if (item.page) {
-          if (currentPage.length) pages.push(currentPage.join('\n'));
-          currentPage = [];
-          lastY = null;
-          return;
-        }
-
-        if (item.text) {
-          const y = Math.round(item.y * 10);
-          if (lastY !== null && Math.abs(y - lastY) > 4) {
-            currentPage.push('');
-          }
-          lastY = y;
-
-          const lastLine = currentPage[currentPage.length - 1] || '';
-          if (lastLine === '') {
-            currentPage.push(item.text.trim());
-          } else {
-            currentPage[currentPage.length - 1] += ' ' + item.text.trim();
-          }
-        }
-      });
-    });
-
+    // Built from each page's own .text, not the convenience result.text --
+    // that field splices in "-- N of M --" page-boundary marker lines by
+    // default, which would otherwise leak into the line-by-line parsing
+    // lab-parser.js does on this string.
+    const rawText = result.pages.map((p) => p.text).join('\n\n');
     const cleanedText = cleanLabText(rawText);
 
     return {
       text: cleanedText.trim(),
-      pages: rawText.split('\n\n').filter(p => p.trim()).length || 1
+      pages: result.pages.length || 1,
     };
   } catch (error) {
-    throw new Error(`PDF extraction failed: ${error.message}`);
+    if (error instanceof PasswordException) {
+      throw new Error('Ce PDF est protégé par un mot de passe. Retirez la protection avant de le déposer ici.');
+    }
+    if (error instanceof InvalidPDFException) {
+      throw new Error("Ce fichier n'est pas un PDF valide ou est corrompu.");
+    }
+    throw new Error(`PDF extraction failed: ${error.message || error}`);
+  } finally {
+    // Always free the parser's resources, success or failure -- per
+    // pdf-parse's own documented usage pattern.
+    if (parser) await parser.destroy();
   }
 }
 
@@ -105,14 +107,15 @@ function cleanLabText(rawText) {
     /^\d{5}\s+[A-Z]/,
     /^Les informations contenues dans ce document/,
     /^Document confidentiel/,
+    /^-- \d+ of \d+ --$/, // pdf-parse's own page-boundary marker, defense-in-depth in case it's ever fed in via result.text instead of the per-page join we actually use
   ];
 
   lines = lines.filter(line => !junkPatterns.some(p => p.test(line)));
   // NOTE: this used to also blindly replace every "O" with "0" and every "l"
   // with "1" here, on the theory of fixing OCR misreads. But extractTextFromPdf
-  // reads the PDF's actual text layer (PdfReader), not an OCR'd image — the
-  // characters are already exact. That replacement was corrupting real words
-  // instead (e.g. "Hémoglobine" -> "Hémog1obine"), so it's gone.
+  // reads the PDF's actual text layer (pdf-parse / pdf.js), not an OCR'd image
+  // — the characters are already exact. That replacement was corrupting real
+  // words instead (e.g. "Hémoglobine" -> "Hémog1obine"), so it's gone.
   lines = lines.map(line => line.replace(/\s+/g, ' ').trim());
 
   return lines.join('\n');
@@ -169,6 +172,30 @@ app.post('/api/prompt', requireInternalSecret, (req, res) => {
   res.json({ success: true, prompt, updatedAt: new Date().toISOString() });
 });
 
+// Same storage pattern as /api/prompt (a named row in the same SQLite
+// "settings" table), but this content is meant to be publicly visible --
+// it's rendered on the real /protection-des-donnees page for every visitor,
+// not hidden behind a login. The frontend's own proxy route is what decides
+// GET is open to anyone while POST (actually editing it) still goes through
+// the same admin gate as the AI prompt; this backend layer only checks the
+// shared internal secret either way, exactly like /api/prompt does.
+app.get('/api/privacy-policy', requireInternalSecret, (req, res) => {
+  res.json({
+    success: true,
+    content: getPrivacyPolicy() || '',
+    updatedAt: getPrivacyPolicyUpdatedAt() || new Date().toISOString(),
+  });
+});
+
+app.post('/api/privacy-policy', requireInternalSecret, (req, res) => {
+  const { content } = req.body;
+  if (typeof content !== 'string' || !content.trim()) {
+    return res.status(400).json({ success: false, error: 'Content field required' });
+  }
+  setPrivacyPolicy(content);
+  res.json({ success: true, content, updatedAt: new Date().toISOString() });
+});
+
 app.post('/api/extract-pdf-text', upload.single('pdf'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, error: 'No PDF file provided' });
@@ -206,6 +233,19 @@ app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
 
     if (req.file) {
       console.log('Processing PDF:', req.file.originalname);
+
+      // Cheap upfront check, before ever invoking the parser: a real PDF
+      // always starts with the "%PDF-" file signature. The frontend already
+      // restricts the file picker to .pdf, but that's trivially bypassed
+      // (drag-and-drop, or hitting this API directly) -- there was no
+      // server-side check at all before this, so a non-PDF upload reached
+      // the parser and crashed with a confusing, sometimes message-less
+      // error instead of a clear "please upload a PDF".
+      const isPdfSignature = req.file.buffer.length >= 5 && req.file.buffer.subarray(0, 5).toString('latin1') === '%PDF-';
+      if (!isPdfSignature) {
+        return res.status(400).json({ success: false, error: "Ce fichier ne semble pas être un PDF valide." });
+      }
+
       const result = await extractTextFromPdf(req.file.buffer);
       textInput = result.text;
       pdfBuffer = req.file.buffer;

@@ -384,10 +384,49 @@ function resolveBulletColor(rawLine, statusLookup, sectionContext) {
   return { isAbnormal, isNormal, computedStatus };
 }
 
+// The standard PDF fonts (Helvetica included) use WinAnsiEncoding, which
+// covers plain ASCII + Latin-1 (so all normal French accents are fine —
+// verified separately), but nothing outside it. pdf-lib's own docs confirm
+// there's no way to check a character in advance; page.drawText() just
+// throws, which used to crash the entire PDF generation the moment the
+// AI's text (or a lab report's own extracted text) contained one — as
+// happened here with "μ" (Greek mu, U+03BC), used constantly in lab units
+// like "μg/L" and "μmol/L", but NOT the same character as "µ" (micro sign,
+// U+00B5) which WinAnsi actually supports and which is what should have
+// been there. Real analyses use micro-unit values constantly, so this
+// wasn't a rare edge case -- it could crash on a large fraction of real
+// reports. Fixed with a substitution pass for the common look-alikes,
+// falling back to stripping anything else outside Latin-1 rather than
+// crashing PDF generation over one stray character ever again.
+const WINANSI_SUBSTITUTIONS = {
+  'μ': 'µ', // Greek small letter mu -> the actual WinAnsi micro sign
+  '–': '-', '—': '-', // en dash, em dash
+  '‘': "'", '’': "'", // smart single quotes
+  '“': '"', '”': '"', // smart double quotes
+  '…': '...', // ellipsis
+  ' ': ' ', // non-breaking space
+};
+
+function sanitizeForWinAnsi(text) {
+  let out = '';
+  for (const ch of text) {
+    if (WINANSI_SUBSTITUTIONS[ch] !== undefined) {
+      out += WINANSI_SUBSTITUTIONS[ch];
+      continue;
+    }
+    // WinAnsi covers ASCII + Latin-1 supplement (every codepoint up to
+    // 0xFF) -- anything past that (Greek, CJK, emoji, ...) has no safe
+    // representation in these fonts, so drop it rather than crash.
+    out += ch.codePointAt(0) <= 0xFF ? ch : '';
+  }
+  return out;
+}
+
 // ========================
 // ULTIMATE PROFESSIONAL PDF DESIGN
 // ========================
 async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, classification) {
+  resultsText = sanitizeForWinAnsi(resultsText);
   const statusLookup = buildStatusLookup(classification);
   const pdfDoc = await PDFDocument.load(originalPdfBuffer);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);

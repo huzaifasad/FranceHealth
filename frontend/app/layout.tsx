@@ -18,23 +18,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Cellude",
   description: "Cellude",
-  icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
-  },
+  // No manual `icons` entry needed: app/icon.svg, app/apple-icon.png and
+  // app/favicon.ico are Next.js's own file-convention names, auto-detected
+  // and served with the correct <link> tags. The previous manual block
+  // here pointed at /icon-light-32x32.png etc., which never existed in
+  // public/ -- every icon request was a 404, so there was never a real
+  // favicon at all.
 }
 
 export default function RootLayout({

@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Celluid",
-  description: "Celluid",
+  title: "Cellude",
+  description: "Cellude",
   icons: {
     icon: [
       {

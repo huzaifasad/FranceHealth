@@ -5,8 +5,8 @@ import { SiteFooter } from "@/components/site-footer"
 import { AlertTriangle } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Mentions légales | Celluid",
-  description: "Mentions légales du site Celluid.",
+  title: "Mentions légales | Cellude",
+  description: "Mentions légales du site Cellude.",
 }
 
 function Placeholder({ children }: { children: React.ReactNode }) {
@@ -89,16 +89,16 @@ export default function LegalNoticePage() {
 
           <h2>Avertissement médical</h2>
           <p>
-            Les explications générées par Celluid sont fournies à titre purement pédagogique et informatif. Elles ne
+            Les explications générées par Cellude sont fournies à titre purement pédagogique et informatif. Elles ne
             constituent en aucun cas un diagnostic, un avis ou une interprétation médicale, et ne remplacent pas la
-            consultation d'un professionnel de santé. Celluid décline toute responsabilité quant à l'usage qui
+            consultation d'un professionnel de santé. Cellude décline toute responsabilité quant à l'usage qui
             pourrait être fait, en dehors de ce cadre, des informations fournies par le service.
           </p>
 
           <h2>Limitation de responsabilité</h2>
           <p>
-            Celluid met tout en œuvre pour assurer l'exactitude et la mise à jour des informations diffusées sur ce
-            site, mais ne peut garantir l'absence d'erreur. Celluid ne pourra être tenu responsable des dommages
+            Cellude met tout en œuvre pour assurer l'exactitude et la mise à jour des informations diffusées sur ce
+            site, mais ne peut garantir l'absence d'erreur. Cellude ne pourra être tenu responsable des dommages
             directs ou indirects résultant de l'accès au site ou de l'utilisation du service, notamment en cas
             d'indisponibilité temporaire.
           </p>

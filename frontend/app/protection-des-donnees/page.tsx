@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { AlertTriangle } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Protection des données | Celluid",
+  title: "Protection des données | Cellude",
   description: "Politique de confidentialité et protection des données personnelles conforme au RGPD.",
 }
 
@@ -54,11 +54,11 @@ export default function DataProtectionPage() {
           </p>
           <p>
             Contact en matière de protection des données :{" "}
-            <Placeholder>[email dédié, ex. dpo@celluid.com]</Placeholder>.
+            <Placeholder>[email dédié, ex. dpo@cellude.com]</Placeholder>.
           </p>
 
           <h2>2. Données collectées</h2>
-          <p>Dans le cadre de l'utilisation du service d'analyse de résultats biologiques, Celluid traite :</p>
+          <p>Dans le cadre de l'utilisation du service d'analyse de résultats biologiques, Cellude traite :</p>
           <ul>
             <li>
               <strong>Le contenu du compte-rendu PDF que vous déposez</strong>, qui constitue une donnée de santé au
@@ -113,7 +113,7 @@ export default function DataProtectionPage() {
             Notre sous-traitant d'intelligence artificielle (voir section 6) peut, de son côté, conserver
             temporairement les données transmises via son API à des fins de lutte contre les abus et de sécurité,
             pour une durée limitée, sans les utiliser pour entraîner ses modèles — conformément à sa politique de
-            confidentialité et aux clauses contractuelles en vigueur avec Celluid. Nous vous invitons à consulter la{" "}
+            confidentialité et aux clauses contractuelles en vigueur avec Cellude. Nous vous invitons à consulter la{" "}
             <Placeholder>[lien vers la politique de confidentialité API d'OpenAI en vigueur]</Placeholder>.
           </p>
           <p>

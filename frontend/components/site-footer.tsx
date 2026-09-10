@@ -11,10 +11,10 @@ export function SiteFooter() {
               <div className="w-12 h-12 rounded-2xl bg-footer-foreground shadow-xl flex items-center justify-center text-footer">
                 <HeartPulse className="w-7 h-7" />
               </div>
-              <span className="font-black text-2xl tracking-tight leading-none">Celluid</span>
+              <span className="font-black text-2xl tracking-tight leading-none">Cellude</span>
             </div>
             <p className="text-footer-foreground/80 text-base leading-relaxed max-w-md font-medium">
-              Nous croyons que chaque patient mérite de comprendre son bilan de santé. Celluid utilise
+              Nous croyons que chaque patient mérite de comprendre son bilan de santé. Cellude utilise
               l'intelligence artificielle pour traduire la complexité biologique en clarté humaine.
             </p>
           </div>
@@ -49,7 +49,7 @@ export function SiteFooter() {
             <h4 className="font-bold text-sm tracking-widest uppercase text-accent">Engagement Médical</h4>
             <div className="bg-footer-foreground/10 rounded-2xl p-6 border border-footer-foreground/20">
               <p className="text-footer-foreground/70 text-sm leading-relaxed">
-                Celluid est un outil d'accompagnement. Les explications fournies ne constituent pas un
+                Cellude est un outil d'accompagnement. Les explications fournies ne constituent pas un
                 diagnostic médical. Consultez toujours votre médecin pour l'interprétation finale de vos résultats
                 biologiques.
               </p>
@@ -66,7 +66,7 @@ export function SiteFooter() {
         </div>
 
         <div className="pt-8 sm:pt-12 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6 text-[10px] font-bold tracking-widest uppercase text-footer-foreground/40 text-center">
-          <span>© 2026 CELLUID. DÉVELOPPÉ POUR VOTRE BIEN-ÊTRE.</span>
+          <span>© 2026 CELLUDE. DÉVELOPPÉ POUR VOTRE BIEN-ÊTRE.</span>
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 sm:gap-8">
             <Link href="/mentions-legales" className="hover:text-footer-foreground transition-colors">
               Mentions Légales

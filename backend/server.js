@@ -202,7 +202,7 @@ app.post('/api/analyze', upload.single('pdf'), async (req, res) => {
   try {
     let textInput = req.body.text;
     let pdfBuffer = null;
-    let fileName = 'analyse_celluid.pdf';
+    let fileName = 'analyse_cellude.pdf';
 
     if (req.file) {
       console.log('Processing PDF:', req.file.originalname);
@@ -389,7 +389,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     color: C.blue 
   });
   
-  page.drawText('CELLUID', {
+  page.drawText('CELLUDE', {
     x: margin, y: height - 45,
     size: 28, font: boldFont, color: C.white
   });
@@ -821,7 +821,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     thickness: 1.5, color: C.silver 
   });
   
-  page.drawText('Celluid', {
+  page.drawText('Cellude', {
     x: margin, y: footerY,
     size: 8, font: boldFont, color: C.navy
   });

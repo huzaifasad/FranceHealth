@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/site-footer"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Celluid | Analyseur de Résultats Biologiques Intelligent",
+  title: "Cellude | Analyseur de Résultats Biologiques Intelligent",
   description:
     "Comprenez vos analyses médicales en un instant grâce à notre IA sécurisée. Téléchargez votre PDF et recevez une explication claire.",
 }

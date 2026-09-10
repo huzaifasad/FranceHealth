@@ -173,7 +173,7 @@ export function AnalyzerForm() {
 
     const link = document.createElement("a")
     link.href = `data:application/pdf;base64,${result.fileBase64}`
-    link.download = result.fileName || "analyse_celluid.pdf"
+    link.download = result.fileName || "analyse_cellude.pdf"
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -383,7 +383,7 @@ export function AnalyzerForm() {
                   </div>
                   <div>
                     <h3 className="text-xl sm:text-3xl font-black m-0 mb-1 sm:mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                      Interprétation Celluid
+                      Interprétation Cellude
                     </h3>
                     <p className="text-muted-foreground mt-0 text-sm sm:text-base font-medium">
                       Voici une synthèse pédagogique de vos résultats biologiques.

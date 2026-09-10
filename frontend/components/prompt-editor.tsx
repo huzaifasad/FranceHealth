@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Save, Code, LogOut, ArrowLeft } from "lucide-react"
+import { Save, Code, LogOut, ArrowLeft, Info } from "lucide-react"
 
 export function PromptEditor() {
   const [prompt, setPrompt] = useState("")
@@ -85,6 +85,25 @@ export function PromptEditor() {
             <LogOut className="w-4 h-4" />
             <span className="hidden sm:inline">Déconnexion</span>
           </Button>
+        </div>
+
+        {/* How it works */}
+        <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-lg border border-accent/30 bg-accent/5 flex gap-3 sm:gap-4">
+          <Info className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+          <div className="text-xs sm:text-sm text-foreground/90 leading-relaxed space-y-2">
+            <p>
+              <strong>This prompt controls only how the AI writes its explanations</strong> — tone, structure, and
+              what it's allowed to say. It does <strong>not</strong> decide whether a value is in or out of range.
+            </p>
+            <p>
+              That classification is already computed in code (<code className="px-1.5 py-0.5 bg-background/70 rounded text-[0.9em]">lab-parser.js</code>) before the AI ever sees the
+              results — the AI receives an already-labeled list and is instructed never to recompute or override it. A
+              bad prompt edit can only produce a worse-written explanation, never a wrong in/out-of-range result.
+            </p>
+            <p className="text-muted-foreground">
+              Changes here apply to the very next analysis — no restart, no redeploy needed.
+            </p>
+          </div>
         </div>
 
         {/* Editor Card */}

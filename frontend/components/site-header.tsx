@@ -6,8 +6,9 @@ import { HeartPulse, Menu, UserCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle, SheetClose } from "@/components/ui/sheet"
 
+// "Éditer le prompt" moved to the footer -- it's an admin link, not
+// something a regular visitor needs in the main nav.
 const NAV_LINKS = [
-  { href: "/prompt", label: "Éditer le prompt" },
   { href: "/protection-des-donnees", label: "Protection des données" },
   { href: "#", label: "Notre mission" },
 ]
@@ -38,15 +39,7 @@ export function SiteHeader() {
         <div className="hidden lg:flex items-center gap-10">
           <div className="flex items-center gap-8 text-sm font-semibold text-muted-foreground">
             {NAV_LINKS.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className={
-                  link.href === "/prompt"
-                    ? "rounded-xl bg-foreground text-background px-6 py-2 font-semibold hover:bg-foreground/90 transition-colors"
-                    : "hover:text-primary transition-colors"
-                }
-              >
+              <Link key={link.label} href={link.href} className="hover:text-primary transition-colors">
                 {link.label}
               </Link>
             ))}

@@ -42,6 +42,11 @@ export function SiteFooter() {
                   Médecins Partenaires
                 </a>
               </li>
+              <li>
+                <Link href="/prompt" className="hover:text-footer-foreground transition-colors">
+                  Éditer le prompt
+                </Link>
+              </li>
             </ul>
           </div>
 

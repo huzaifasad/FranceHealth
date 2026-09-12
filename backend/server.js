@@ -573,39 +573,45 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
   const lines = resultsText.split('\n');
   let currentIsAbnormal = false;
 
-  // The AI's actual output today is a flat sequence of per-parameter
-  // markdown blocks -- "### Name" heading, then "**Résultat :**",
-  // "**Intervalle :**", "**Statut :**" fact lines, then "Qu'est-ce que
-  // c'est ?" / "À quoi ça sert dans le corps ?" / "Côté alimentation"
-  // sub-headings with explanatory prose -- ending in one "### Résumé"
-  // block. There's no more numbered "1. VALEURS EN DEHORS..." grouping;
-  // the old pattern-matching below (^\d+\., ^---, ^•) simply never
-  // matched this shape, so every line fell through to plain body text,
-  // complete with the literal #/* markdown symbols the AI wrote them
-  // with -- e.g. "### Hémoglobine" and "**Résultat :**" printed verbatim.
+  // The AI's exact markdown decoration is NOT consistent between
+  // generations, even with the same system prompt -- confirmed from two
+  // real production PDFs: one wrote "### Hémoglobine" / "**Résultat :**",
+  // another wrote a bare "Hémoglobine" / "- Résultat :" for the exact
+  // same content. A first version of this code matched only the first
+  // style (anchored on # and **), so the second style's fact lines never
+  // matched at all and fell through to plain body text -- bold-vs-plain
+  // looked identical for every result regardless of status, which is
+  // the whole point of this feature. Fixed by classifying on CONTENT,
+  // not decoration: strip any leading -/•/*/# marker before checking
+  // what a line actually says, and fall back to matching the line
+  // against a KNOWN test name (statusLookup) to recognize a heading when
+  // there's no # at all. Whatever the AI's markdown habit is this time,
+  // this doesn't depend on it.
   //
-  // # and * are stripped from every line before drawing, unconditionally
-  // -- never shown, regardless of whether they were well-formed (the
-  // AI's own markdown isn't always paired correctly either: it writes
-  // "*Qu'est-ce que c'est ?**", one opening asterisk, two closing).
-  // Bold-vs-plain for the fact lines is decided entirely by OUR computed
-  // classification (statusLookup / resolveBulletColor), never by
-  // whether the AI itself wrapped a word in **bold** -- confirmed the
-  // live prompt currently has the AI bold "**Dans l'intervalle**" in
-  // full while leaving "En dehors de l'intervalle" plain, the opposite
-  // of what this PDF needs to show. Same "never trust the AI's own
-  // formatting for status" principle pdf-color.test.js already covers
-  // for the old bullet format, just triggered by a heading match now
-  // instead of a bullet prefix.
-  const FACT_LABEL_RE = /^\**\s*(Résultat|Intervalle|Statut)\s*:?\s*\**/i;
-  const SUBHEADING_RE = /^\**\s*(Qu'est-ce que c'est ?\??|À quoi ça sert dans le corps ?\??|Côté alimentation)\s*\**\s*$/i;
-  const SUMMARY_ITEM_RE = /^\**\s*(Dans l'intervalle|En dehors de l'intervalle|Données non interprétables)\s*\**\s*:/i;
+  // All #/*/- decoration is stripped from every line before drawing,
+  // unconditionally -- never shown, regardless of whether it was well-
+  // formed (the AI's own markdown isn't always paired correctly either:
+  // one generation wrote "*Qu'est-ce que c'est ?**", one opening
+  // asterisk, two closing). Bold-vs-plain for the fact lines is decided
+  // entirely by OUR computed classification (statusLookup /
+  // resolveBulletColor), never by whether the AI itself wrapped a word
+  // in **bold** -- confirmed the live prompt has the AI bold "**Dans
+  // l'intervalle**" in full while leaving "En dehors de l'intervalle"
+  // plain, the opposite of what this PDF needs to show. Same "never
+  // trust the AI's own formatting for status" principle
+  // pdf-color.test.js already covers for the old bullet format.
+  const LEADING_DECOR = '[\\s\\-•*#]*';
+  const FACT_LABEL_RE = new RegExp(`^${LEADING_DECOR}(Résultat|Intervalle|Statut)\\s*:?`, 'i');
+  const SUBHEADING_RE = new RegExp(`^${LEADING_DECOR}(Qu'est-ce que c'est ?\\??|À quoi ça sert dans le corps ?\\??|Côté alimentation)\\s*\\**\\s*$`, 'i');
+  const SUMMARY_ITEM_RE = new RegExp(`^${LEADING_DECOR}(Dans l'intervalle|En dehors de l'intervalle|Données non interprétables)\\s*\\**\\s*:`, 'i');
+  const SEPARATOR_RE = /^-{2,}$/; // a bare "---" some generations use between blocks
+  const stripLeading = (s) => s.replace(new RegExp(`^${LEADING_DECOR}`, 'i'), '').trim();
   const stripMarkdown = (s) => s.replace(/[#*]+/g, '').trim();
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim();
 
-    if (!line) {
+    if (!line || SEPARATOR_RE.test(line)) {
       y -= 16; // was 8 -- client asked for more breathing room between results
       continue;
     }
@@ -623,13 +629,27 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     let leftPad = 0;
     let extraSpace = 0;
     let iconType = null;
-    const headingMatch = line.match(/^#{1,6}\s*(.+)$/);
+
+    const hashHeadingMatch = line.match(/^#{1,6}\s*(.+)$/);
+    const isResumeHeading = /^r[ée]sum[ée]$/i.test(stripLeading(stripMarkdown(line)));
+    // No # required -- a bare line that's exactly one of our own known
+    // test names (from the classification the code already computed) is
+    // just as much a heading as a "### "-decorated one. Exact normalized
+    // match only here (statusLookup.has), NOT lookupStatus()'s usual
+    // fuzzy substring fallback -- that fallback is right for matching a
+    // slightly-reworded bullet against a real name, but too permissive
+    // for "is this random short sentence actually a heading": a test
+    // literally named "Fer" (iron -- the exact example in the live
+    // prompt) would fuzzy-match any sentence containing "fer" as a
+    // substring, e.g. "référence" or "transfert".
+    const bareCandidate = !hashHeadingMatch && line.length < 60 && !line.includes(':') ? stripLeading(stripMarkdown(line)) : null;
+    const isBareHeading = bareCandidate && statusLookup.has(normalizeTestName(bareCandidate));
 
     // ========================
-    // PARAMETER / SECTION HEADING ("### Name", "### Résumé")
+    // PARAMETER / SECTION HEADING ("### Name" or a bare "Name")
     // ========================
-    if (headingMatch) {
-      const headingName = stripMarkdown(headingMatch[1]);
+    if (hashHeadingMatch || isBareHeading || isResumeHeading) {
+      const headingName = stripLeading(stripMarkdown(hashHeadingMatch ? hashHeadingMatch[1] : line));
       line = headingName;
 
       page.drawRectangle({
@@ -644,7 +664,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
       leftPad = 18;
       extraSpace = 14;
 
-      if (/^r[ée]sum[ée]$/i.test(headingName)) {
+      if (isResumeHeading) {
         currentIsAbnormal = false; // the summary heading itself is never "bold"
         iconType = 'info';
       } else {
@@ -653,10 +673,10 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     }
 
     // ========================
-    // FACT LINES: "**Résultat :**", "**Intervalle :**", "**Statut :**"
+    // FACT LINES: "**Résultat :**", "- Résultat :", "Résultat :", ...
     // ========================
     else if (FACT_LABEL_RE.test(line)) {
-      line = stripMarkdown(line);
+      line = stripLeading(stripMarkdown(line));
       leftPad = 25;
       extraSpace = 4;
       textSize = 10;
@@ -668,7 +688,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     // SUB-HEADINGS: "Qu'est-ce que c'est ?", "À quoi ça sert...", "Côté alimentation"
     // ========================
     else if (SUBHEADING_RE.test(line)) {
-      line = stripMarkdown(line);
+      line = stripLeading(stripMarkdown(line));
       leftPad = 25;
       extraSpace = 4;
       textSize = 9.5;
@@ -677,10 +697,10 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     }
 
     // ========================
-    // RÉSUMÉ CATEGORY LIST ITEMS: "**Dans l'intervalle :** Leucocytes, ..."
+    // RÉSUMÉ CATEGORY LIST ITEMS: "**Dans l'intervalle :** ...", "- Dans l'intervalle : ..."
     // ========================
     else if (SUMMARY_ITEM_RE.test(line)) {
-      line = stripMarkdown(line);
+      line = stripLeading(stripMarkdown(line));
       leftPad = 18;
       textFont = boldFont;
       textSize = 9.5;
@@ -691,7 +711,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     // EVERYTHING ELSE: explanatory prose -- always plain, status never applies
     // ========================
     else {
-      line = stripMarkdown(line);
+      line = stripLeading(stripMarkdown(line));
       leftPad = 30;
       textSize = 9;
       textColor = C.charcoal;

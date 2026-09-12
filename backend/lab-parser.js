@@ -43,8 +43,16 @@ function overallStatus(entries) {
 }
 
 const NUM = "\\d+(?:[.,]\\d+)?";
-const UNIT = "[A-Za-zµ%/°²³\\.\\-]{0,15}";
-const UNIT_REQUIRED = "[A-Za-zµ%/°²³\\.]{1,15}"; // non-empty, needed to disambiguate the double-value pattern
+// Both "µ" (U+00B5, the actual micro sign) and "μ" (U+03BC, Greek small
+// letter mu) show up in real extracted PDF text for micro-units like
+// µg/L or µmol/L -- they're visually identical but different codepoints,
+// and only the micro sign used to be in this class. A line using the
+// Greek mu variant matched nothing at all and fell through to UNPARSED
+// ("Données non interprétables"), even though the value itself was
+// perfectly readable -- confirmed by testing both variants directly
+// against a real "Ferritine 310 µg/L 20 - 250" line before this fix.
+const UNIT = "[A-Za-zµμ%/°²³\\.\\-]{0,15}";
+const UNIT_REQUIRED = "[A-Za-zµμ%/°²³\\.]{1,15}"; // non-empty, needed to disambiguate the double-value pattern
 
 // name  value1 unit1  value2 unit2  min1-max1 [unit1]  min2-max2 [unit2]
 // e.g. "Cholestérol non-HDL 29,23 mmol/L 3,31 g/L 5,13 à 14,23 mmol/L 0,58 à 1,61 g/L"

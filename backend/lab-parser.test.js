@@ -67,3 +67,18 @@ test("comma and dot decimals both parse the same way", () => {
   assert.equal(withComma.entries[0].value, withDot.entries[0].value);
   assert.equal(withComma.status, withDot.status);
 });
+
+// Real bug, caught from an actual production PDF: "µg/L" extracted from a
+// real lab report sometimes uses "μ" (Greek small letter mu, U+03BC), not
+// "µ" (the actual micro sign, U+00B5) -- visually identical, different
+// codepoint. Only the micro sign used to be in the unit character class,
+// so a Greek-mu line matched nothing at all and fell through to UNPARSED
+// ("Données non interprétables"), even though Ferritine's own value (310
+// µg/L, range 20-250) was clearly, obviously out of range.
+test("µ-prefixed units parse the same whether it's the micro sign or Greek mu", () => {
+  const microSign = parseLine("Ferritine 310 µg/L 20 - 250");
+  const greekMu = parseLine("Ferritine 310 μg/L 20 - 250");
+  assert.equal(microSign.status, "ABOVE");
+  assert.equal(greekMu.status, "ABOVE", "Greek mu variant must classify identically, not UNPARSED");
+  assert.equal(greekMu.entries[0].value, 310);
+});

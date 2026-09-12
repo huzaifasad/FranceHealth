@@ -571,14 +571,40 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
   // ========================
   
   const lines = resultsText.split('\n');
-  let sectionNum = 0;
-  let inAbnormal = false;
-  let inNormal = false;
-  let inRecap = false;
+  let currentIsAbnormal = false;
+
+  // The AI's actual output today is a flat sequence of per-parameter
+  // markdown blocks -- "### Name" heading, then "**Résultat :**",
+  // "**Intervalle :**", "**Statut :**" fact lines, then "Qu'est-ce que
+  // c'est ?" / "À quoi ça sert dans le corps ?" / "Côté alimentation"
+  // sub-headings with explanatory prose -- ending in one "### Résumé"
+  // block. There's no more numbered "1. VALEURS EN DEHORS..." grouping;
+  // the old pattern-matching below (^\d+\., ^---, ^•) simply never
+  // matched this shape, so every line fell through to plain body text,
+  // complete with the literal #/* markdown symbols the AI wrote them
+  // with -- e.g. "### Hémoglobine" and "**Résultat :**" printed verbatim.
+  //
+  // # and * are stripped from every line before drawing, unconditionally
+  // -- never shown, regardless of whether they were well-formed (the
+  // AI's own markdown isn't always paired correctly either: it writes
+  // "*Qu'est-ce que c'est ?**", one opening asterisk, two closing).
+  // Bold-vs-plain for the fact lines is decided entirely by OUR computed
+  // classification (statusLookup / resolveBulletColor), never by
+  // whether the AI itself wrapped a word in **bold** -- confirmed the
+  // live prompt currently has the AI bold "**Dans l'intervalle**" in
+  // full while leaving "En dehors de l'intervalle" plain, the opposite
+  // of what this PDF needs to show. Same "never trust the AI's own
+  // formatting for status" principle pdf-color.test.js already covers
+  // for the old bullet format, just triggered by a heading match now
+  // instead of a bullet prefix.
+  const FACT_LABEL_RE = /^\**\s*(Résultat|Intervalle|Statut)\s*:?\s*\**/i;
+  const SUBHEADING_RE = /^\**\s*(Qu'est-ce que c'est ?\??|À quoi ça sert dans le corps ?\??|Côté alimentation)\s*\**\s*$/i;
+  const SUMMARY_ITEM_RE = /^\**\s*(Dans l'intervalle|En dehors de l'intervalle|Données non interprétables)\s*\**\s*:/i;
+  const stripMarkdown = (s) => s.replace(/[#*]+/g, '').trim();
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim();
-    
+
     if (!line) {
       y -= 16; // was 8 -- client asked for more breathing room between results
       continue;
@@ -597,181 +623,96 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     let leftPad = 0;
     let extraSpace = 0;
     let iconType = null;
+    const headingMatch = line.match(/^#{1,6}\s*(.+)$/);
 
     // ========================
-    // SECTION HEADERS
+    // PARAMETER / SECTION HEADING ("### Name", "### Résumé")
     // ========================
-    if (line.match(/^\d+\.\s+[A-ZÉÈÊ]/)) {
-      sectionNum++;
-      
-      const badgeSize = 32;
-      const badgeX = margin - 5;
-      
-      page.drawRectangle({ 
-        x: badgeX, y: y - 8, 
-        width: badgeSize, height: badgeSize, 
-        color: C.blue 
-      });
-      
-      page.drawText(sectionNum.toString(), { 
-        x: badgeX + (sectionNum > 9 ? 8 : 11), 
-        y: y + 4, 
-        size: 16, font: boldFont, color: C.white 
-      });
-      
-      textFont = boldFont;
-      textSize = 15;
-      textColor = C.navy;
-      leftPad = 40;
-      extraSpace = 28; // was 20 -- more room between a section header and its content
+    if (headingMatch) {
+      const headingName = stripMarkdown(headingMatch[1]);
+      line = headingName;
 
-      // No more red/green status icon here -- the numbered blue badge is
-      // enough of a marker, and this used to be the section-level version
-      // of the same red-out/green-in coloring the client asked removed
-      // entirely from the per-result rows below.
-      if (line.includes('DEHORS')) {  // Fixed: removed || 'REPÈRES' to avoid matching normal section
-        inAbnormal = true;
-        inNormal = false;
-        inRecap = false;
-      } else if (line.includes('DANS')) {
-        inAbnormal = false;
-        inNormal = true;
-        inRecap = false;
-      } else if (line.includes('RÉCAPITULATIF') || line.includes('RECAPITULATIF')) {
-        inAbnormal = false;
-        inNormal = false;
-        inRecap = true;
-        iconType = 'info';
-      }
-    }
-    
-    // ========================
-    // SUBSECTION HEADERS
-    // ========================
-    else if (line.startsWith('---')) {
-      line = line.replace(/^---\s*/, '');
-      
-      page.drawRectangle({ 
-        x: margin + 5, y: y - 6, 
-        width: 4, height: 22, 
-        color: C.blue 
+      page.drawRectangle({
+        x: margin + 5, y: y - 6,
+        width: 4, height: 22,
+        color: C.blue
       });
-      
+
       textFont = boldFont;
-      textSize = 12;
+      textSize = 13;
       textColor = C.navy;
       leftPad = 18;
-      extraSpace = 22; // was 15 -- more room between a subsection header and its content
-    }
-    
-    // ========================
-    // TEST RESULTS
-    // ========================
-    else if (line.startsWith('•') || line.startsWith('*') || line.startsWith('-')) {
-      line = line.replace(/^[•*-]\s*/, '');
-      leftPad = 25;
-      extraSpace = 6; // more breathing room between one result and the next
+      extraSpace = 14;
 
-      // Read status from OUR computed classification, not from which
-      // section the AI put this line in — resolveBulletColor() is the
-      // single source of truth for this decision (see its own tests in
-      // pdf-color.test.js). It no longer drives a *color* (client asked
-      // for that removed entirely) -- just whether this line is bold
-      // (out-of-range) or regular (in-range/everything else). Same
-      // neutral charcoal either way, no red, no green, no tinted box,
-      // no status icon.
-      const resolved = resolveBulletColor(line, statusLookup, { inAbnormal, inNormal });
-      const isAbnormalBullet = resolved.isAbnormal;
-      const isNormalBullet = resolved.isNormal;
-
-      // Keep the running section context in sync so the detail lines under
-      // this bullet ("Votre résultat :", "Repères :", ...) — which aren't
-      // bullets themselves — inherit the same, correctly-sourced status.
-      if (resolved.computedStatus) {
-        inAbnormal = isAbnormalBullet;
-        inNormal = isNormalBullet;
-      }
-
-      textColor = C.charcoal;
-      iconType = 'bullet';
-      if (isAbnormalBullet) {
-        textFont = boldFont;
-      }
-    }
-    
-    // ========================
-    // CATEGORY LABELS
-    // ========================
-    else if (line.match(/^[A-ZÉÈÊ].*:$/) && !line.startsWith('Vue') && !line.startsWith('Nombre') && !line.startsWith('Catégories')) {
-      textFont = boldFont;
-      textSize = 10;
-      textColor = C.blue;
-      leftPad = 15;
-      extraSpace = 10;
-    }
-    
-    // ========================
-    // VALUE LABELS AND SUBSECTIONS
-    // ========================
-    else if (line.match(/^(Votre|Repères|Position|Qu'est-ce|Nombre|Valeurs|Catégories)/i) && line.includes(':')) {
-      if (line.match(/^Qu'est-ce/i)) {
-        textFont = boldFont;
-        textSize = 9;
-        textColor = C.navy;
-        leftPad = 30;
-        extraSpace = 5;
+      if (/^r[ée]sum[ée]$/i.test(headingName)) {
+        currentIsAbnormal = false; // the summary heading itself is never "bold"
+        iconType = 'info';
       } else {
-        // "Votre résultat", "Repères", "Position" -- bold these along with
-        // the result's name when it's out-of-range, so the whole entry
-        // reads as emphasized, not just its first line. Same neutral gray
-        // either way, only the weight changes.
-        textFont = inAbnormal ? boldFont : font;
-        textSize = 9;
-        textColor = C.gray;
-        leftPad = 30;
+        currentIsAbnormal = resolveBulletColor(headingName, statusLookup, { inAbnormal: false, inNormal: false }).isAbnormal;
       }
     }
-    
+
     // ========================
-    // DEFINITION TEXT
+    // FACT LINES: "**Résultat :**", "**Intervalle :**", "**Statut :**"
     // ========================
-    else if (leftPad === 0 && i > 0 && !line.match(/^[A-ZÉÈÊ][A-ZÉÈÊ]/)) {
-      leftPad = 30;
+    else if (FACT_LABEL_RE.test(line)) {
+      line = stripMarkdown(line);
+      leftPad = 25;
+      extraSpace = 4;
+      textSize = 10;
       textColor = C.charcoal;
-      textSize = 9;
+      textFont = currentIsAbnormal ? boldFont : font;
     }
-    
+
     // ========================
-    // OVERRIDE: Fix color for normal section content
+    // SUB-HEADINGS: "Qu'est-ce que c'est ?", "À quoi ça sert...", "Côté alimentation"
     // ========================
-    if (inNormal && !line.startsWith('•') && !line.startsWith('*') && !line.startsWith('-') && !line.includes('---') && leftPad > 0) {
-      textColor = C.charcoal;  // Reset to normal text color for definitions
+    else if (SUBHEADING_RE.test(line)) {
+      line = stripMarkdown(line);
+      leftPad = 25;
+      extraSpace = 4;
+      textSize = 9.5;
+      textFont = boldFont;
+      textColor = C.navy;
+    }
+
+    // ========================
+    // RÉSUMÉ CATEGORY LIST ITEMS: "**Dans l'intervalle :** Leucocytes, ..."
+    // ========================
+    else if (SUMMARY_ITEM_RE.test(line)) {
+      line = stripMarkdown(line);
+      leftPad = 18;
+      textFont = boldFont;
+      textSize = 9.5;
+      textColor = C.navy;
+    }
+
+    // ========================
+    // EVERYTHING ELSE: explanatory prose -- always plain, status never applies
+    // ========================
+    else {
+      line = stripMarkdown(line);
+      leftPad = 30;
+      textSize = 9;
+      textColor = C.charcoal;
     }
 
     // ========================
     // DRAW ICON
     // ========================
     // No more colored background box or red/green status icon (alert/
-    // check) -- bold-vs-regular text is now the only status indicator.
-    if (iconType) {
+    // check) -- bold-vs-regular text is the only status indicator now.
+    if (iconType === 'info') {
       const iconX = margin + leftPad - 16;
       const iconY = y + 2;
-
-      if (iconType === 'bullet') {
-        page.drawCircle({ 
-          x: iconX, y: iconY, size: 3, 
-          color: C.blue 
-        });
-      } else if (iconType === 'info') {
-        page.drawCircle({ 
-          x: iconX, y: iconY, size: 7, 
-          color: C.lightBlue, borderColor: C.blue, borderWidth: 1.5 
-        });
-        page.drawText('i', { 
-          x: iconX - 2, y: iconY - 3, 
-          size: 9, font: italicFont, color: C.blue 
-        });
-      }
+      page.drawCircle({
+        x: iconX, y: iconY, size: 7,
+        color: C.lightBlue, borderColor: C.blue, borderWidth: 1.5
+      });
+      page.drawText('i', {
+        x: iconX - 2, y: iconY - 3,
+        size: 9, font: italicFont, color: C.blue
+      });
     }
 
     // ========================

@@ -599,7 +599,24 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
   // format -- this is that same principle, just extended past markdown
   // to cover HTML too, generically, rather than tag-by-tag.
   const LEADING_DECOR = '(?:[\\s\\-•*#]|<\\/?[a-zA-Z][^>]*>)*';
-  const FACT_LABEL_RE = new RegExp(`^${LEADING_DECOR}(Résultat|Intervalle|Statut)\\s*:?`, 'i');
+  // "Résultat" and "Intervalle" still need their label present -- their
+  // actual values are arbitrary numbers, nothing to key on otherwise.
+  const FACT_LABEL_RE = new RegExp(`^${LEADING_DECOR}(Résultat|Intervalle)\\s*:?`, 'i');
+  // "Statut" is different: there are only three possible values ever
+  // written there, so recognize the line by THAT -- "en dehors de
+  // l'intervalle" / "dans l'intervalle" / "données non interprétables"
+  // -- whether or not the AI bothered to write "Statut :" in front of
+  // it, same reasoning as the heading fix (don't depend on the AI
+  // including a specific word when the actual content already tells us
+  // everything we need). Anchored so the phrase must END the line (an
+  // optional label may come first, but nothing may follow) specifically
+  // so this can't also match the Résumé block's list lines -- "Dans
+  // l'intervalle : Leucocytes, Plaquettes..." has real content after
+  // the phrase, a genuine status line never does.
+  const STATUS_VALUE_RE = new RegExp(
+    `^${LEADING_DECOR}(?:Statut\\s*:?\\s*)?(?:en dehors de l'intervalle|dans l'intervalle|données non interprétables)\\s*$`,
+    'i'
+  );
   const SUBHEADING_RE = new RegExp(`^${LEADING_DECOR}(Qu'est-ce que c'est ?\\??|À quoi ça sert dans le corps ?\\??|Côté alimentation)\\s*(?:[*]|<\\/?[a-zA-Z][^>]*>)*\\s*$`, 'i');
   const SUMMARY_ITEM_RE = new RegExp(`^${LEADING_DECOR}(Dans l'intervalle|En dehors de l'intervalle|Données non interprétables)\\s*(?:[*]|<\\/?[a-zA-Z][^>]*>)*\\s*:`, 'i');
   const SEPARATOR_RE = /^-{2,}$/; // a bare "---" some generations use between blocks
@@ -685,9 +702,10 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     }
 
     // ========================
-    // FACT LINES: "**Résultat :**", "- Résultat :", "Résultat :", ...
+    // FACT LINES: "**Résultat :**", "- Résultat :", "Statut :", or a bare
+    // "En dehors de l'intervalle" with no label at all
     // ========================
-    else if (FACT_LABEL_RE.test(line)) {
+    else if (FACT_LABEL_RE.test(line) || STATUS_VALUE_RE.test(line)) {
       line = stripLeading(stripMarkdown(line));
       leftPad = 25;
       extraSpace = 4;

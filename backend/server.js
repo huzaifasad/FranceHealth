@@ -573,40 +573,52 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
   const lines = resultsText.split('\n');
   let currentIsAbnormal = false;
 
-  // The AI's exact markdown decoration is NOT consistent between
-  // generations, even with the same system prompt -- confirmed from two
-  // real production PDFs: one wrote "### Hémoglobine" / "**Résultat :**",
-  // another wrote a bare "Hémoglobine" / "- Résultat :" for the exact
-  // same content. A first version of this code matched only the first
-  // style (anchored on # and **), so the second style's fact lines never
-  // matched at all and fell through to plain body text -- bold-vs-plain
-  // looked identical for every result regardless of status, which is
-  // the whole point of this feature. Fixed by classifying on CONTENT,
-  // not decoration: strip any leading -/•/*/# marker before checking
-  // what a line actually says, and fall back to matching the line
-  // against a KNOWN test name (statusLookup) to recognize a heading when
-  // there's no # at all. Whatever the AI's markdown habit is this time,
-  // this doesn't depend on it.
+  // The AI's exact decoration syntax is NOT consistent between
+  // generations, even with the same system prompt -- confirmed across
+  // THREE real production PDFs, each a genuinely different style for
+  // the exact same content: "### Hémoglobine" / "**Résultat :**", then
+  // a bare "Hémoglobine" / "- Résultat :", then (because the live
+  // prompt tells it to show in-range results "en VERT", and plain text
+  // can't literally be colored) "<span style=\"color:green;\">Dans
+  // l'intervalle</span>" -- the model reaching for HTML once markdown
+  // bold wasn't enough to express "green". Matching each style as it
+  // turns up is a losing game -- there will be a fourth. So instead of
+  // enumerating syntaxes, this strips anything that LOOKS like markup,
+  // of any kind, plus classifies content generically (see below), and
+  // separately the live prompt's actual color instruction needs fixing
+  // too (flagged to the client) since it's the reason the model keeps
+  // trying in the first place.
   //
-  // All #/*/- decoration is stripped from every line before drawing,
-  // unconditionally -- never shown, regardless of whether it was well-
-  // formed (the AI's own markdown isn't always paired correctly either:
-  // one generation wrote "*Qu'est-ce que c'est ?**", one opening
-  // asterisk, two closing). Bold-vs-plain for the fact lines is decided
-  // entirely by OUR computed classification (statusLookup /
-  // resolveBulletColor), never by whether the AI itself wrapped a word
-  // in **bold** -- confirmed the live prompt has the AI bold "**Dans
-  // l'intervalle**" in full while leaving "En dehors de l'intervalle"
-  // plain, the opposite of what this PDF needs to show. Same "never
-  // trust the AI's own formatting for status" principle
-  // pdf-color.test.js already covers for the old bullet format.
-  const LEADING_DECOR = '[\\s\\-•*#]*';
+  // Bold-vs-plain for the fact lines is decided entirely by OUR computed
+  // classification (statusLookup / resolveBulletColor), never by
+  // whatever emphasis the AI applied itself -- confirmed the live
+  // prompt has the AI bold/color "Dans l'intervalle" while leaving "En
+  // dehors de l'intervalle" plain, the opposite of what this PDF needs
+  // to show. Same "never trust the AI's own formatting for status"
+  // principle pdf-color.test.js already covers for the old bullet
+  // format -- this is that same principle, just extended past markdown
+  // to cover HTML too, generically, rather than tag-by-tag.
+  const LEADING_DECOR = '(?:[\\s\\-•*#]|<\\/?[a-zA-Z][^>]*>)*';
   const FACT_LABEL_RE = new RegExp(`^${LEADING_DECOR}(Résultat|Intervalle|Statut)\\s*:?`, 'i');
-  const SUBHEADING_RE = new RegExp(`^${LEADING_DECOR}(Qu'est-ce que c'est ?\\??|À quoi ça sert dans le corps ?\\??|Côté alimentation)\\s*\\**\\s*$`, 'i');
-  const SUMMARY_ITEM_RE = new RegExp(`^${LEADING_DECOR}(Dans l'intervalle|En dehors de l'intervalle|Données non interprétables)\\s*\\**\\s*:`, 'i');
+  const SUBHEADING_RE = new RegExp(`^${LEADING_DECOR}(Qu'est-ce que c'est ?\\??|À quoi ça sert dans le corps ?\\??|Côté alimentation)\\s*(?:[*]|<\\/?[a-zA-Z][^>]*>)*\\s*$`, 'i');
+  const SUMMARY_ITEM_RE = new RegExp(`^${LEADING_DECOR}(Dans l'intervalle|En dehors de l'intervalle|Données non interprétables)\\s*(?:[*]|<\\/?[a-zA-Z][^>]*>)*\\s*:`, 'i');
   const SEPARATOR_RE = /^-{2,}$/; // a bare "---" some generations use between blocks
   const stripLeading = (s) => s.replace(new RegExp(`^${LEADING_DECOR}`, 'i'), '').trim();
-  const stripMarkdown = (s) => s.replace(/[#*]+/g, '').trim();
+  // Strips markup generically rather than one enumerated syntax at a
+  // time: any HTML/XML-ish tag (open or close, whatever attributes it
+  // carries -- this is what actually catches the <span style="color:
+  // ...">...</span> bug, and the next tag the model tries too, without
+  // needing a matching update here), markdown links reduced to just
+  // their visible text, and markdown's own punctuation (#, *, backtick,
+  // underscore, tilde). Deliberately requires a letter or "/" right
+  // after "<" -- "< 2,00 g/L" and "> 0,40 g/L" are real reference-range
+  // syntax this app uses constantly (Cholestérol total, HDL...), not
+  // markup, and must survive this untouched.
+  const stripMarkdown = (s) => s
+    .replace(/<\/?[a-zA-Z][^>]*>/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[#*`_~]+/g, '')
+    .trim();
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim();

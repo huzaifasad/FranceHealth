@@ -434,16 +434,14 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
   const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 
   // PREMIUM COLOR PALETTE UPDATED TO MATCH CERBALLIANCE
+  // Client request: no more red/out-of-range vs green/in-range coloring on
+  // results -- status is now shown by bold (out-of-range) vs regular
+  // (in-range) weight only, both in the same neutral charcoal. The red/
+  // green palette entries that used to drive that are gone.
   const C = {
     navy: rgb(0.05, 0.20, 0.35),
     blue: rgb(0, 209/255, 220/255), // #00D1DC Robin's Egg Blue from Cerballiance brand
     lightBlue: rgb(0.88, 0.94, 0.98),
-    green: rgb(0.11, 0.56, 0.25),
-    greenBg: rgb(0.94, 0.98, 0.95),
-    greenLight: rgb(0.75, 0.90, 0.80),
-    red: rgb(0.78, 0.10, 0.10),
-    redBg: rgb(0.99, 0.95, 0.95),
-    redLight: rgb(0.95, 0.75, 0.75),
     orange: rgb(0.85, 0.50, 0.10),
     orangeBg: rgb(0.99, 0.97, 0.93),
     charcoal: rgb(0.15, 0.15, 0.18),
@@ -581,9 +579,9 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim();
     
-    if (!line) { 
-      y -= 8; 
-      continue; 
+    if (!line) {
+      y -= 16; // was 8 -- client asked for more breathing room between results
+      continue;
     }
 
     if (y < margin + 100) {
@@ -598,9 +596,6 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     let textColor = C.charcoal;
     let leftPad = 0;
     let extraSpace = 0;
-    let drawBox = false;
-    let boxColor = C.white;
-    let borderColor = null;
     let iconType = null;
 
     // ========================
@@ -628,18 +623,20 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
       textSize = 15;
       textColor = C.navy;
       leftPad = 40;
-      extraSpace = 20;
-      
+      extraSpace = 28; // was 20 -- more room between a section header and its content
+
+      // No more red/green status icon here -- the numbered blue badge is
+      // enough of a marker, and this used to be the section-level version
+      // of the same red-out/green-in coloring the client asked removed
+      // entirely from the per-result rows below.
       if (line.includes('DEHORS')) {  // Fixed: removed || 'REPÈRES' to avoid matching normal section
         inAbnormal = true;
         inNormal = false;
         inRecap = false;
-        iconType = 'alert';
       } else if (line.includes('DANS')) {
         inAbnormal = false;
         inNormal = true;
         inRecap = false;
-        iconType = 'check';
       } else if (line.includes('RÉCAPITULATIF') || line.includes('RECAPITULATIF')) {
         inAbnormal = false;
         inNormal = false;
@@ -664,7 +661,7 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
       textSize = 12;
       textColor = C.navy;
       leftPad = 18;
-      extraSpace = 15;
+      extraSpace = 22; // was 15 -- more room between a subsection header and its content
     }
     
     // ========================
@@ -673,46 +670,32 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     else if (line.startsWith('•') || line.startsWith('*') || line.startsWith('-')) {
       line = line.replace(/^[•*-]\s*/, '');
       leftPad = 25;
+      extraSpace = 6; // more breathing room between one result and the next
 
-      // Read color from OUR computed status, not from which section the AI
-      // put this line in — resolveBulletColor() is the single source of
-      // truth for this decision (see its own tests in pdf-color.test.js).
+      // Read status from OUR computed classification, not from which
+      // section the AI put this line in — resolveBulletColor() is the
+      // single source of truth for this decision (see its own tests in
+      // pdf-color.test.js). It no longer drives a *color* (client asked
+      // for that removed entirely) -- just whether this line is bold
+      // (out-of-range) or regular (in-range/everything else). Same
+      // neutral charcoal either way, no red, no green, no tinted box,
+      // no status icon.
       const resolved = resolveBulletColor(line, statusLookup, { inAbnormal, inNormal });
       const isAbnormalBullet = resolved.isAbnormal;
       const isNormalBullet = resolved.isNormal;
 
       // Keep the running section context in sync so the detail lines under
       // this bullet ("Votre résultat :", "Repères :", ...) — which aren't
-      // bullets themselves — inherit the same, correctly-sourced color.
+      // bullets themselves — inherit the same, correctly-sourced status.
       if (resolved.computedStatus) {
         inAbnormal = isAbnormalBullet;
         inNormal = isNormalBullet;
       }
 
+      textColor = C.charcoal;
+      iconType = 'bullet';
       if (isAbnormalBullet) {
-        drawBox = true;
-        boxColor = C.redBg;
-        borderColor = C.redLight;
-        textColor = C.red;
         textFont = boldFont;
-        iconType = 'alert';
-
-        if (line.includes(':') && !line.toLowerCase().includes('qu\'est')) {
-          textSize = 11;
-        }
-      } else if (isNormalBullet) {
-        textColor = C.green;
-        iconType = 'check';
-
-        if (line.includes(':')) {
-          textFont = boldFont;
-          textSize = 10;
-        }
-      } else if (inRecap) {
-        textColor = C.charcoal;
-        iconType = 'bullet';
-      } else {
-        iconType = 'bullet';
       }
     }
     
@@ -738,7 +721,11 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
         leftPad = 30;
         extraSpace = 5;
       } else {
-        textFont = font;
+        // "Votre résultat", "Repères", "Position" -- bold these along with
+        // the result's name when it's out-of-range, so the whole entry
+        // reads as emphasized, not just its first line. Same neutral gray
+        // either way, only the weight changes.
+        textFont = inAbnormal ? boldFont : font;
         textSize = 9;
         textColor = C.gray;
         leftPad = 30;
@@ -762,45 +749,15 @@ async function appendResultsToPdf(originalPdfBuffer, resultsText, textInput, cla
     }
 
     // ========================
-    // DRAW BACKGROUND BOX
-    // ========================
-    if (drawBox) {
-      const boxH = 20;
-      page.drawRectangle({ 
-        x: margin, y: y - 6, 
-        width: maxWidth, height: boxH, 
-        color: boxColor,
-        borderColor: borderColor || C.silver,
-        borderWidth: 1
-      });
-    }
-
-    // ========================
     // DRAW ICON
     // ========================
+    // No more colored background box or red/green status icon (alert/
+    // check) -- bold-vs-regular text is now the only status indicator.
     if (iconType) {
       const iconX = margin + leftPad - 16;
       const iconY = y + 2;
-      
-      if (iconType === 'alert') {
-        page.drawCircle({ 
-          x: iconX, y: iconY, size: 7, 
-          color: C.redLight, borderColor: C.red, borderWidth: 1.5 
-        });
-        page.drawText('!', { 
-          x: iconX - 2.5, y: iconY - 3, 
-          size: 10, font: boldFont, color: C.red 
-        });
-      } else if (iconType === 'check') {
-        page.drawCircle({ 
-          x: iconX, y: iconY, size: 7, 
-          color: C.greenBg, borderColor: C.green, borderWidth: 1.5 
-        });
-        page.drawText('+', { 
-          x: iconX - 3, y: iconY - 3, 
-          size: 11, font: boldFont, color: C.green 
-        });
-      } else if (iconType === 'bullet') {
+
+      if (iconType === 'bullet') {
         page.drawCircle({ 
           x: iconX, y: iconY, size: 3, 
           color: C.blue 
